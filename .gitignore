@@ -1,0 +1,8 @@
+vendor/
+build/*
+!build/engine.wasm
+out/
+ios/Fukumi.xcodeproj/
+ios/Fukumi/Info.plist
+tools/__pycache__/
+.DS_Store

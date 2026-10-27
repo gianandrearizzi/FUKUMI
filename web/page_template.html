@@ -1,0 +1,1721 @@
+<meta charset="utf-8">
+<title>Fukumi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600&family=Zen+Maru+Gothic:wght@400;500;700&display=swap">
+<style>
+/* Fukumi: the instrument holds its information and lets it surface when touched.
+   Values appear under the hand and sink back; modulation is a haze, not a point;
+   structure comes from tone and space, not lines. Layout: page 1 is the body, two
+   mirrored halves (A left hand, B right) with the mixer between them; the matrices
+   have their own pages; the modulation boxes sit in the strip at the bottom. */
+:root {
+  --paper: #e4e6e1;   /* stone grey ground */
+  --leaf: #eef0eb;    /* module surface */
+  --hollow: #d8dbd4;  /* sunken: display, wells, fields */
+  --rule: rgba(36, 42, 47, 0.13);
+  --ink: #242a2f;     /* sumi */
+  --ink-2: #646d74;   /* usuzumi: labels */
+  --ink-3: #a3a9ad;   /* faint: empty holes, idle lights */
+  --a: #3a5c80;       /* ai, left hand */
+  --b: #9a6d2e;       /* kuchiba, right hand */
+  --c: #4b7466;       /* rokushō: modulation */
+  --rec: #b04a36;     /* only while recording */
+  --ok: #4c7752;
+  --warn: #9d7726;
+  --k: 50px;
+  --serif: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", Georgia, serif;
+  --sans: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Avenir Next", "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #1f2327; --leaf: #272c31; --hollow: #1a1d21; --rule: rgba(222, 226, 221, 0.11);
+    --ink: #dfe3de; --ink-2: #9aa3a8; --ink-3: #5c6469;
+    --a: #92b1d2; --b: #d4a866; --c: #8ab7a7; --rec: #e3826c; --ok: #8fb993; --warn: #d6b062;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #1f2327; --leaf: #272c31; --hollow: #1a1d21; --rule: rgba(222, 226, 221, 0.11);
+  --ink: #dfe3de; --ink-2: #9aa3a8; --ink-3: #5c6469;
+  --a: #92b1d2; --b: #d4a866; --c: #8ab7a7; --rec: #e3826c; --ok: #8fb993; --warn: #d6b062;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.5;
+  padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px));
+  padding-top: 14px; padding-bottom: calc(var(--strip-h, 150px) + 22px);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1280px; margin: 0 auto; display: grid; gap: 12px; }
+.silk { font-family: var(--sans); font-weight: 500; font-size: 12px; letter-spacing: 0.01em; color: var(--ink-2); }
+h1 { font-family: var(--serif); font-weight: 600; font-size: 22px; letter-spacing: 0.01em; margin: 0; white-space: nowrap; }
+h1 .kanji { font-weight: 500; font-size: 17px; color: var(--ink-2); margin-left: 4px; }
+h2 { font-family: var(--serif); font-weight: 600; font-size: 16px; color: var(--ink); margin: 0; }
+button { font: inherit; color: inherit; }
+button:focus-visible, .knob:focus-visible, label.filebtn:focus-within, select:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+/* Top bar */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+.tabs { display: inline-flex; gap: 2px; }
+.tabs button { position: relative; border: 0; background: transparent; padding: 8px 12px; min-height: 40px; cursor: pointer; font-size: 15px; font-weight: 500; color: var(--ink-2); }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tabs button[aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 4px; height: 2px; border-radius: 2px; background: var(--ink); }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-left: auto; }
+.btn { border: 0; background: var(--leaf); border-radius: 999px; padding: 8px 16px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; font-weight: 500; min-height: 40px; font-size: 14px; color: var(--ink); }
+.btn:hover { background: var(--hollow); }
+.btn.primary { background: var(--ink); color: var(--paper); }
+.btn.primary:hover { background: color-mix(in srgb, var(--ink) 86%, var(--paper)); }
+.btn.on { box-shadow: inset 0 0 0 1.5px var(--a); }
+.btn[aria-pressed="true"] small { color: var(--ink); }
+.btn .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ink-3); }
+.btn.on .dot { background: var(--a); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+/* Inside a module the buttons are a faint outline, so they stay buttons without shouting. */
+.sec .btn { background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
+.sec .btn:hover { background: var(--hollow); }
+.sec .btn[aria-pressed="true"] { box-shadow: inset 0 0 0 1.5px var(--ch); }
+label.filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.master { display: inline-flex; align-items: center; gap: 8px; }
+.master input { width: 100px; accent-color: var(--ink-2); }
+.status { font-size: 13px; color: var(--ink-2); }
+.status.err { color: var(--rec); }
+
+/* Page 1: the two halves and the mixer between them */
+.stage { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.half { display: contents; }
+.half[data-ch="0"] { --ch: var(--a); }
+.half[data-ch="1"] { --ch: var(--b); }
+.half[data-ch="0"] > .s-in { grid-area: 1 / 1; } .half[data-ch="0"] > .s-res { grid-area: 2 / 1; } .half[data-ch="0"] > .s-loop { grid-area: 3 / 1; }
+.half[data-ch="1"] > .s-in { grid-area: 1 / 3; } .half[data-ch="1"] > .s-res { grid-area: 2 / 3; } .half[data-ch="1"] > .s-loop { grid-area: 3 / 3; }
+.sec { background: var(--leaf); border-radius: 22px; padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.mix { background: transparent; box-shadow: inset 0 0 0 1px var(--rule); border-radius: 22px; padding: 10px 6px; display: grid; grid-template-columns: repeat(2, 68px); align-content: space-evenly; justify-content: center; gap: 10px 4px; min-width: 0; }
+.mix.m-in { grid-area: 1 / 2; } .mix.m-res { grid-area: 2 / 2; } .mix.m-loop { grid-area: 3 / 2; }
+.mstrip { display: grid; justify-items: center; gap: 0; min-width: 0; }
+.mstrip.a { --ch: var(--a); } .mstrip.b { --ch: var(--b); }
+.mlabel { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; font-size: 12.5px; white-space: nowrap; color: var(--ink); }
+.mlabel i { width: 6px; height: 6px; border-radius: 50%; background: var(--ch); opacity: 0.15; flex: none; box-shadow: 0 0 6px var(--ch); }
+.mstrip .kvol .silk { display: none; }
+.mstrip .kpan { --k: 38px; margin-top: 2px; }
+/* On narrow screens each module carries its own volume and pan, at its foot. */
+.mixrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; border-top: 1px solid var(--rule); padding-top: 8px; }
+.mixrow:empty { display: none; }
+.mixrow .mstrip { display: flex; align-items: center; gap: 12px; }
+.mixrow .mstrip .kvol .silk { display: block; }
+.half.mirror .mixrow, .half.mirror .mixrow .mstrip { flex-direction: row-reverse; }
+.row { display: flex; align-items: center; gap: 12px; flex-wrap: nowrap; min-width: 0; }
+/* A and B: a letter in its own ink, in a faint wash of it. */
+.badge { width: 30px; height: 30px; border-radius: 50%; background: color-mix(in srgb, var(--ch) 15%, transparent); color: var(--ch); display: grid; place-items: center; font-family: var(--serif); font-weight: 600; font-size: 17px; flex: none; }
+.stitle { font-family: var(--serif); font-weight: 600; font-size: 19px; white-space: nowrap; }
+.spacer { flex: 1 1 auto; }
+.pill { font-size: 12px; font-weight: 500; padding: 2px 10px; border-radius: 999px; background: var(--hollow); color: var(--ink-2); white-space: nowrap; }
+.pill[data-s="1"], .pill[data-s="3"], .pill[data-s="4"] { color: var(--rec); background: color-mix(in srgb, var(--rec) 13%, transparent); }
+.pill[data-s="5"] { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+.pill[data-s="2"] { color: var(--ch); background: color-mix(in srgb, var(--ch) 13%, transparent); }
+.len { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+/* Levels as a haze that thickens, not a bar that counts. */
+.meter { width: 96px; height: 5px; border-radius: 5px; background: var(--hollow); overflow: hidden; flex: none; }
+.meter i { display: block; height: 100%; width: 0; border-radius: 5px; background: linear-gradient(90deg, color-mix(in srgb, var(--ch) 10%, transparent), var(--ch)); transition: width 90ms linear; }
+.vrow { border-top: 1px solid var(--rule); padding-top: 8px; }
+.vhead { display: inline-flex; align-items: center; gap: 10px; flex: none; }
+.half.mirror .vhead { flex-direction: row-reverse; }
+.vmeter { width: 56px; }
+.srcsel { flex: 1 1 180px; min-width: 0; max-width: 100%; min-height: 40px; border: 0; border-radius: 999px; background: var(--hollow); color: var(--ink); padding: 6px 14px; font: inherit; font-size: 14px; }
+.mini { min-height: 34px; padding: 4px 13px; font-size: 13.5px; }
+.mini small { font-size: 12px; font-weight: 500; color: var(--ink-2); margin-right: 2px; }
+canvas.screen { width: 100%; height: 84px; display: block; border-radius: 14px; background: var(--hollow); }
+/* REC: an ink ring. It fills while the hand is recording. */
+.rec { position: relative; width: 64px; height: 64px; border-radius: 50%; border: 2.5px solid var(--ink-2); background: transparent; display: grid; place-items: center; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; flex: none; transition: border-color 160ms, background 160ms; }
+.rec .led { width: 20px; height: 20px; border-radius: 50%; background: var(--ink-3); transition: background 120ms, transform 160ms; }
+.rec[data-s="1"], .rec[data-s="4"] { border-color: var(--rec); background: color-mix(in srgb, var(--rec) 12%, transparent); }
+.rec[data-s="1"] .led, .rec[data-s="4"] .led { background: var(--rec); transform: scale(1.15); }
+.rec[data-s="3"] { border-color: var(--rec); }
+.rec[data-s="3"] .led { background: var(--rec); animation: breathe 1s ease-in-out infinite; }
+.rec[data-s="5"] { border-color: var(--warn); }
+.rec[data-s="5"] .led { background: var(--warn); }
+.rec[data-s="2"] .led { background: var(--ch); }
+.rec.down { transform: scale(0.97); border-color: var(--ch); }
+@keyframes breathe { 50% { opacity: 0.35; } }
+/* Sync: REC waits for the master clock. The dot beats with it; a waiting REC breathes. */
+.rsync { gap: 7px; }
+.rsync .tick { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); opacity: 0.6; transition: opacity 90ms, transform 90ms; }
+.rsync[aria-pressed="true"] .tick { background: var(--ch); }
+.rsync .tick.beat { opacity: 1; transform: scale(1.35); }
+.rec.armed { border-style: dashed; border-color: var(--ch); animation: waiting 1s ease-in-out infinite; }
+@keyframes waiting { 50% { border-color: var(--ink-3); } }
+@media (prefers-reduced-motion: reduce) { .rec[data-s="3"] .led, .rec.armed { animation: none; } .meter i { transition: none; } }
+.hint { font-size: 13px; color: var(--ink-2); min-width: 0; flex: 1 1 auto; }
+
+/* Knobs: the value is held inside. It surfaces under the hand and fades back. */
+.knobs { display: grid; gap: 4px 2px; min-width: 0; }
+.knobs.k3 { grid-template-columns: repeat(3, minmax(64px, 1fr)); flex: 1 1 auto; }
+.knobs.k6 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.knobs.k7 { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.knobs.k8 { grid-template-columns: repeat(8, minmax(0, 1fr)); --k: 42px; }
+.knobs.k8 .kcell .silk { font-size: 11px; }
+.kcell { display: grid; justify-items: center; gap: 2px; min-width: 0; text-align: center; position: relative; }
+.kcell .silk { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.knob { width: var(--k); height: var(--k); touch-action: none; cursor: ns-resize; border-radius: 50%; }
+.knob svg { width: var(--k); height: var(--k); display: block; overflow: visible; }
+.kval { font-size: 12px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; opacity: 0; transition: opacity 900ms ease-out; min-height: 1.5em; }
+.kcell:hover .kval, .kcell:focus-within .kval, .kcell.reveal .kval, body.show-values .kval { opacity: 1; transition: opacity 120ms; }
+.kcell.off { opacity: 0.32; pointer-events: none; }
+/* The right half is the mirror image of the left. */
+.half.mirror .row { flex-direction: row-reverse; }
+.half.mirror .knobs { direction: rtl; }
+.half.mirror .knobs > * { direction: ltr; }
+.half.mirror .hint { text-align: right; }
+.drow { border-top: 1px solid var(--rule); padding-top: 8px; display: grid; gap: 4px; }
+
+/* Matrix pages */
+.mods { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 360px)); gap: 12px; --ch: var(--c); }
+.mods .sec .knobs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mods .picker { width: 100%; justify-content: flex-start; }
+.mods .sec > p.silk { font-weight: 400; }
+.mled { width: 8px; height: 8px; border-radius: 50%; background: var(--c); opacity: 0.15; margin-left: auto; flex: none; box-shadow: 0 0 8px var(--c); }
+
+/* Modulation strip: a band of mist at the foot of the screen, on every page. */
+.strip { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: color-mix(in srgb, var(--paper) 84%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--rule);
+  padding: 8px max(14px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(14px, env(safe-area-inset-left, 0px)); --ch: var(--c); --k: 42px; }
+.strip-head { display: flex; align-items: center; gap: 12px; max-width: 1280px; margin: 0 auto 6px; min-width: 0; }
+.strip-head .silk { font-family: var(--serif); font-weight: 600; font-size: 15px; color: var(--ink); }
+.strip-head .hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.strip-row { display: flex; align-items: stretch; gap: 8px; max-width: 1280px; margin: 0 auto; min-width: 0; }
+.strip-scroll { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; flex: 1 1 auto; min-width: 0; padding-bottom: 2px; overscroll-behavior-x: contain; scrollbar-width: none; }
+.strip-scroll::-webkit-scrollbar { display: none; }
+.sarrow { flex: none; width: 34px; border: 0; background: transparent; border-radius: 999px; cursor: pointer; font-size: 22px; line-height: 1; color: var(--ink-2); }
+.sarrow:hover { background: var(--leaf); color: var(--ink); }
+.sarrow:disabled { opacity: 0.25; cursor: default; background: transparent; }
+.mbox { flex: none; width: 158px; scroll-snap-align: start; background: var(--leaf); border-radius: 18px; padding: 6px 6px 6px 10px; display: grid; gap: 2px; }
+.mbox.master { background: transparent; box-shadow: inset 0 0 0 1.5px var(--ink-3); }
+.mbox.master .mbadge { background: var(--ink); color: var(--paper); }
+.mhead { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.mbadge { min-width: 24px; height: 24px; padding: 0 6px; border-radius: 999px; background: color-mix(in srgb, var(--c) 16%, transparent); color: var(--c); display: grid; place-items: center; font-weight: 700; font-size: 12px; flex: none; }
+.mname { font-family: var(--serif); font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.mx { flex: none; width: 30px; height: 30px; border: 0; background: transparent; border-radius: 999px; cursor: pointer; color: var(--ink-3); font-size: 18px; line-height: 1; }
+.mx:hover { background: var(--hollow); color: var(--ink); }
+.mbox .knobs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.addbox { flex: none; width: 64px; min-height: 56px; border: 1.5px dashed var(--ink-3); background: transparent; border-radius: 18px; cursor: pointer; font-size: 26px; line-height: 1; color: var(--ink-2); }
+.addbox:hover { color: var(--ink); border-color: var(--ink-2); }
+.addbox:disabled { opacity: 0.4; cursor: default; }
+.strip.collapsed .mbox .knobs { display: none; }
+.strip.collapsed .addbox { min-height: 40px; font-size: 22px; }
+.addmenu { position: fixed; z-index: 30; background: var(--leaf); color: var(--ink); border-radius: 18px; padding: 8px; display: grid; gap: 2px; box-shadow: 0 14px 38px rgba(20, 26, 30, 0.22); width: 260px; }
+.addmenu button { text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 12px; cursor: pointer; min-height: 46px; display: flex; gap: 12px; align-items: center; }
+.addmenu button:hover, .addmenu button:focus-visible { background: var(--hollow); }
+.addmenu b { font-weight: 500; display: block; }
+.addmenu small { color: var(--ink-2); font-size: 12.5px; line-height: 1.35; display: block; }
+
+/* MIDI learn */
+.midibtn { position: relative; width: 40px; height: 40px; border: 0; background: var(--leaf); border-radius: 50%; display: grid; place-items: center; cursor: pointer; color: var(--ink-2); padding: 0; }
+.midibtn:hover { color: var(--ink); background: var(--hollow); }
+.midibtn[aria-pressed="true"] { background: var(--c); color: var(--paper); }
+.midibtn .mdot { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); display: none; }
+.midibtn.connected .mdot { display: block; }
+.learnbar { position: sticky; top: 0; z-index: 15; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border-radius: 18px; background: color-mix(in srgb, var(--c) 14%, var(--leaf)); }
+.learnbar .ltext { flex: 1 1 260px; font-size: 14px; min-width: 0; }
+body.learning [data-learn] { outline: 1.5px dashed color-mix(in srgb, var(--c) 70%, transparent); outline-offset: 3px; border-radius: 14px; cursor: pointer; }
+body.learning [data-learn].armed { outline: 2.5px solid var(--c); background: color-mix(in srgb, var(--c) 12%, transparent); }
+body.learning [data-learn][data-cc]::after { content: attr(data-cc); position: absolute; top: -8px; right: -4px; z-index: 2; font-size: 10.5px; font-weight: 500; line-height: 1; padding: 3px 6px; border-radius: 999px; background: var(--c); color: var(--paper); white-space: nowrap; pointer-events: none; }
+body.learning .master[data-learn] { position: relative; }
+
+/* Matrices: every connection is a drop of ink. Its size says how much; a ring is a negative amount. */
+.presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.presets .silk { font-family: var(--serif); font-weight: 600; font-size: 15px; color: var(--ink); margin-right: 6px; }
+.presets .btn { min-height: 36px; padding: 6px 14px; font-size: 13.5px; background: transparent; box-shadow: inset 0 0 0 1px var(--rule); }
+.presets .btn:hover { background: var(--leaf); }
+.presets .btn[aria-pressed="true"] { background: var(--leaf); box-shadow: inset 0 0 0 1.5px var(--ink-2); }
+.board { position: relative; background: var(--leaf); color: var(--ink); border-radius: 22px; padding: 16px 16px 12px; display: grid; gap: 8px; min-width: 0; }
+.board .bhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.board h3 { font-family: var(--serif); font-weight: 600; font-size: 19px; margin: 0; }
+.board .note { font-size: 13.5px; color: var(--ink-2); margin: 0; max-width: 78ch; }
+.bscroll { overflow-x: auto; }
+table.grid { border-collapse: separate; border-spacing: 0; }
+table.grid th { font-weight: 500; font-size: 12px; color: var(--ink-2); padding: 4px 3px; text-align: center; white-space: nowrap; }
+table.grid thead tr.groups th { font-family: var(--serif); font-weight: 600; font-size: 13.5px; color: var(--ink); padding-bottom: 2px; }
+table.grid th[scope="row"] { text-align: left; padding-right: 12px; color: var(--ink); position: sticky; left: 0; background: var(--leaf); z-index: 1; font-size: 13px; }
+table.grid th[scope="row"] .rl { display: inline-flex; align-items: center; gap: 8px; }
+.rled { width: 6px; height: 6px; border-radius: 50%; background: var(--c); opacity: 0.12; flex: none; box-shadow: 0 0 6px var(--c); }
+table.grid td { padding: 0; text-align: center; }
+table.grid tr.rgroup th { text-align: left; font-family: var(--serif); font-weight: 600; color: var(--ink-2); font-size: 13px; padding: 14px 3px 2px; position: sticky; left: 0; background: var(--leaf); }
+table.grid .gsep { border-left: 1px solid var(--rule); }
+.cell { position: relative; width: 34px; height: 30px; border: 0; background: transparent; border-radius: 10px; padding: 0; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform 140ms; }
+.cell::before { content: ""; position: absolute; left: 50%; top: 50%; width: 7px; height: 7px; transform: translate(-50%, -50%); border-radius: 50%; border: 1px solid var(--ink-3); box-sizing: border-box; transition: width 160ms, height 160ms, background 160ms, border-color 160ms; }
+.cell.back::before { border-style: dotted; }
+.cell:hover::before { border-color: var(--ink-2); }
+.cell.on::before { width: var(--d, 12px); height: var(--d, 12px); background: var(--ink); border-color: var(--ink); }
+.cell.on.neg::before { background: transparent; border-width: 2px; }
+.cell.off { cursor: not-allowed; }
+.cell.off::before { opacity: 0.25; }
+.cell.holding { transform: scale(0.85); transition: transform 450ms; }
+.cell:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.editor { position: absolute; z-index: 5; width: min(280px, calc(100% - 24px)); background: var(--leaf); color: var(--ink); border-radius: 18px; padding: 14px; display: grid; gap: 10px; box-shadow: 0 14px 38px rgba(20, 26, 30, 0.22); }
+.editor .etitle { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.editor .evalue { font-family: var(--serif); font-weight: 600; font-size: 26px; font-variant-numeric: tabular-nums; }
+.editor input[type="range"] { width: 100%; accent-color: var(--ink-2); }
+.editor .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.editor .chips button { border: 0; background: var(--hollow); border-radius: 999px; padding: 4px 10px; min-height: 32px; cursor: pointer; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.editor .eactions { display: flex; justify-content: flex-end; gap: 8px; }
+.trimcell { display: inline-flex; align-items: center; gap: 6px; }
+.trimcell input { width: 64px; accent-color: var(--ink-2); }
+.trimcell output { font-size: 11.5px; color: var(--ink-2); min-width: 3.2em; text-align: right; font-variant-numeric: tabular-nums; opacity: 0; transition: opacity 900ms; }
+.trimcell:hover output, .trimcell:focus-within output, body.show-values .trimcell output { opacity: 1; transition: opacity 120ms; }
+.help { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 28px; font-size: 14.5px; color: var(--ink-2); padding: 6px 4px 0; }
+.help ul { margin: 6px 0 0; padding-left: 18px; }
+.help li { margin-bottom: 4px; max-width: 62ch; }
+.help b { font-weight: 500; color: var(--ink); }
+
+@media (max-width: 960px) {
+  .stage { grid-template-columns: minmax(0, 1fr); }
+  .half > .sec { grid-area: auto !important; }
+  .half[data-ch="0"] > .sec { order: 1; } .half[data-ch="1"] > .sec { order: 3; }
+  .stage > .mix { display: none; }
+  .knobs.k7, .knobs.k6 { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); }
+  .knobs.k8 { grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)); }
+}
+@media (max-width: 640px) { .strip-head .hint { display: none; } }
+@media (max-width: 480px) {
+  .controls { margin-left: 0; }
+  .row.wrapnarrow { flex-wrap: wrap; }
+  .trimcell input { width: 48px; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <filter id="haze" filterUnits="userSpaceOnUse" x="-14" y="-14" width="84" height="84"><feGaussianBlur stdDeviation="2.4"/></filter></defs></svg>
+<div class="wrap">
+  <header class="top">
+    <h1>Fukumi <span lang="ja" class="kanji">含み</span></h1>
+    <div class="tabs" role="tablist" aria-label="Pagine">
+      <button type="button" role="tab" id="tab-suona" aria-controls="suona" aria-selected="true">Suona</button>
+      <button type="button" role="tab" id="tab-audio" aria-controls="audio" aria-selected="false">Matrice audio</button>
+      <button type="button" role="tab" id="tab-mod" aria-controls="modulazione" aria-selected="false">Modulazione</button>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="start" type="button">Avvia audio</button>
+      <label class="btn filebtn"><input type="file" id="file" accept="audio/*,.wav,.m4a,.mp3,.aif,.aiff">Carica un WAV</label>
+      <button class="btn" id="filePlay" type="button" aria-pressed="false" hidden><span class="dot"></span><span id="fileName">File</span></button>
+      <button class="btn mini" id="valuesBtn" type="button" aria-pressed="false" title="Mostra i valori delle manopole solo quando le tocchi, o sempre"><small>Valori</small><span>al tocco</span></button>
+      <span class="master" data-learn="master"><span class="silk">Volume</span><input type="range" id="master" min="0" max="1" step="0.01" value="0.8" aria-label="Volume generale"></span>
+      <button class="midibtn" id="midiBtn" type="button" aria-pressed="false" aria-label="MIDI learn: collega i controlli a un controller" title="MIDI learn">
+        <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/>
+          <circle cx="6.5" cy="12" r="1.4" fill="currentColor"/><circle cx="8.1" cy="8.1" r="1.4" fill="currentColor"/><circle cx="12" cy="6.5" r="1.4" fill="currentColor"/>
+          <circle cx="15.9" cy="8.1" r="1.4" fill="currentColor"/><circle cx="17.5" cy="12" r="1.4" fill="currentColor"/><rect x="10.5" y="18.2" width="3" height="2.4" rx="0.6" fill="currentColor"/></svg>
+        <span class="mdot"></span></button>
+    </div>
+  </header>
+  <div class="status" id="status" role="status">Audio spento. Tocca Avvia audio: ogni ingresso sceglie una sorgente del sistema o un WAV caricato.</div>
+  <div class="learnbar" id="learnbar" hidden><span class="ltext" id="learnText"></span>
+    <button class="btn mini" type="button" id="learnClear" disabled>Togli collegamento</button>
+    <button class="btn mini primary" type="button" id="learnDone">Fine</button></div>
+
+  <main class="stage" id="suona" role="tabpanel" aria-labelledby="tab-suona"></main>
+
+  <main id="audio" role="tabpanel" aria-labelledby="tab-audio" hidden>
+    <div class="wrap">
+      <div class="presets" id="presets" data-presets><span class="silk">Patch</span></div>
+      <section class="mods" id="modsAudio" aria-label="Impostazioni"></section>
+      <div class="board" id="audioBoard"></div>
+      <section class="help" aria-label="Come si usa">
+        <div><h2>Matrice audio</h2><ul>
+          <li>Un <b>tocco</b> accende o spegne un bottone, all'ultimo valore usato; una <b>pressione lunga</b> apre la regolazione del valore.</li>
+          <li>I bottoni tratteggiati tornano indietro nella catena: arrivano mezzo millisecondo dopo.</li>
+          <li>Il <b>vocoder</b> di ogni lato ha due ingressi: <b>modulante</b> (per esempio il microfono) e <b>portante</b> (per esempio Rings). Senza portante, con il rumore alzato, fa suonare il corpo del risonatore.</li>
+          <li>Ogni sorgente arriva all'uscita con il suo <b>volume</b> e il suo <b>pan</b>, nella pagina Suona. Un loop a volume zero si registra senza farlo sentire.</li>
+          <li>Il <b>delay</b> fa parte del looper: i suoi echi escono con il looper, nella stessa riga.</li></ul></div>
+        <div><h2>Tasto REC</h2><ul>
+          <li><b>Tocco</b>: prima registrazione, o sostituisce dalla testina; un altro tocco chiude.</li>
+          <li><b>Doppio tocco</b>: sostituisce tutto e ridefinisce la lunghezza.</li>
+          <li><b>Tieni premuto</b> oltre mezzo secondo: overdub finché tieni.</li>
+          <li>Con <b>Sync</b> acceso il REC aspetta il battito del clock principale: la registrazione parte e si chiude sulla griglia, e il loop dura un numero intero di battiti. I gesti restano gli stessi.</li></ul></div>
+        <div><h2>Manopole</h2><ul>
+          <li>Il valore di una manopola affiora quando la tocchi e poi svanisce. Il tasto <b>Valori</b> in alto lo tiene sempre visibile.</li>
+          <li>L'<b>alone</b> attorno a una manopola mostra dove la sta portando la modulazione.</li>
+          <li>Nelle matrici ogni collegamento è una goccia: più è grande, più è forte; un anello è un valore negativo. Il numero esatto è nella pressione lunga.</li></ul></div>
+        <div><h2>Questa versione</h2><ul>
+          <li>Gli ingressi del sistema (microfono interno, canali dell'H6) compaiono quando il browser li concede. Dentro Claude non li concede: carica un WAV.</li>
+          <li><b>MIDI learn</b>: il tasto in alto a destra; tocca un controllo, poi muovi un potenziometro. Funziona dove il browser dà accesso al MIDI (Chrome o Edge su computer), non su Safari per iPad né dentro Claude.</li>
+          <li>Su iPhone, se non senti nulla, togli la modalità silenziosa.</li></ul></div>
+      </section>
+    </div>
+  </main>
+
+  <main id="modulazione" role="tabpanel" aria-labelledby="tab-mod" hidden>
+    <div class="wrap">
+      <div class="presets" data-presets><span class="silk">Patch</span></div>
+      <section class="mods" id="mods" aria-label="Modulatori"></section>
+      <div class="board" id="controlBoard"></div>
+      <section class="help" aria-label="Come si usa">
+        <div><h2>Matrice di controllo</h2><ul>
+          <li>Un <b>tocco</b> accende o spegne un bottone; una <b>pressione lunga</b> apre la regolazione, da −100 a +100%.</li>
+          <li>Il <b>trim</b> di ogni riga scala la sorgente; doppio tocco per il 100%.</li>
+          <li>Il <b>pan del delay</b> si modula solo nel modo Pan: in Ping-pong la sua colonna è spenta, e i collegamenti tornano attivi quando torni a Pan.</li></ul></div>
+        <div><h2>Box di modulazione</h2><ul>
+          <li>Il <b>+</b> nella striscia in basso aggiunge un LFO, un sample &amp; hold, un clock o un inviluppo AD.</li>
+          <li>Ogni box aggiunge una <b>riga</b> in fondo alla matrice di controllo e una <b>colonna trigger</b> a destra: l'LFO e il clock ripartono, il S&amp;H campiona, l'AD parte.</li>
+          <li>Senza nulla sul suo trigger il S&amp;H va con il suo clock interno.</li>
+          <li>La <b>×</b> toglie il box con tutti i suoi collegamenti.</li>
+          <li>Il <b>clock</b> a sinistra è il tempo di tutto lo strumento; i box clock ne sono divisioni, spostabili.</li></ul></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<footer class="strip" id="strip" aria-label="Box di modulazione">
+  <div class="strip-head"><span class="silk">Modulazione</span><span class="status" id="boxCount"></span>
+    <span class="hint">Ogni box è una riga in fondo alla matrice di controllo, con il suo trigger a destra</span>
+    <button class="btn mini" type="button" id="stripToggle" aria-controls="boxes" aria-expanded="true">Riduci</button></div>
+  <div class="strip-row"><div id="masterClock"></div>
+    <button class="sarrow" type="button" id="boxPrev" aria-label="Box precedenti">‹</button>
+    <div class="strip-scroll" id="boxes"><button class="addbox" type="button" id="addBox" aria-haspopup="menu" aria-expanded="false" aria-label="Aggiungi un box di modulazione">+</button></div>
+    <button class="sarrow" type="button" id="boxNext" aria-label="Box successivi">›</button></div>
+</footer>
+
+<script>
+const WASM_B64 = "__WASM_B64__";
+const WORKLET_SRC = __WORKLET_SRC__;
+
+// --- Parameters (normalised 0..1; the engine maps them) -----------------------
+const pct = (x) => Math.round(x * 100) + '%';
+const sign = (x) => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x);
+const NOTES = ['Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯', 'La', 'La♯', 'Si'];
+const noteName = (m) => NOTES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
+const curve = (v) => { const x = v * 2 - 1; return Math.abs(x) < 0.05 ? 'lineare' : (x < 0 ? 'exp ' : 'log ') + Math.round(Math.abs(x) * 100); };
+const EVERY = [0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64];
+const DIVS = ['1/32', '1/16', '1/8', '1/4', '1/2', '1 batt.', '2 batt.', '4 batt.'];
+const speed = (v) => { let x = (v - 0.5) * 4; if (Math.abs(x) < 0.08) x = 0; else if (Math.abs(x - 1) < 0.08) x = 1; else if (Math.abs(x + 1) < 0.08) x = -1; return x; };
+const hz = (x) => x < 1 ? x.toFixed(2).replace('.', ',') + ' Hz' : x.toFixed(1).replace('.', ',') + ' Hz';
+const ms = (x) => x < 1000 ? Math.round(x) + ' ms' : (x / 1000).toFixed(2).replace('.', ',') + ' s';
+
+const LOOPER = [
+  { i: 0, key: 'tune', label: 'Tune', def: 0.5, fmt: (v) => sign(Math.round(v * 24 - 12)) + ' st', mod: 0 },
+  { i: 1, key: 'oct', label: 'Ottava', def: 0.5, fmt: (v) => sign(Math.round(v * 6 - 3)) + ' ott' },
+  { i: 2, key: 'start', label: 'Start', def: 0, fmt: pct },
+  { i: 3, key: 'end', label: 'End', def: 1, fmt: pct },
+  { i: 4, key: 'pos', label: 'Testina', def: 0, fmt: pct, mod: 1 },
+  { i: 5, key: 'speed', label: 'Speed', def: 0.75, fmt: (v) => { const x = speed(v); return x === 0 ? 'freeze' : x.toFixed(2).replace('-', '−').replace('.', ',') + '×'; }, mod: 2 },
+  { i: 6, key: 'grains', label: 'Grani', def: 3 / 31, fmt: (v) => String(Math.round(1 + v * 31)), mod: 3 },
+  { i: 7, key: 'spread', label: 'Spread', def: 0.15, fmt: pct, mod: 4 },
+  { i: 8, key: 'att', label: 'Attack', def: 0.5, fmt: curve },
+  { i: 9, key: 'dec', label: 'Decay', def: 0.5, fmt: curve },
+  { i: 10, key: 'size', label: 'Size', def: 0.5, fmt: (v) => ms(5 * Math.pow(400, v)), mod: 5 },
+  { i: 11, key: 'every', label: 'Ogni N', def: 4 / 12, fmt: (v) => { const x = EVERY[Math.round(v * 12)]; return x ? 'ogni ' + x : 'spento'; } },
+  { i: 12, key: 'prob', label: 'Probab.', def: 1, fmt: pct },
+  // The delay, part of the looper: engine indices 14..22.
+  { i: 14, key: 'dtime', label: 'Tempo', def: 0.64, fmt: (v) => ms(10 * Math.pow(200, v)), delay: true },
+  { i: 15, key: 'dfb', label: 'Feedback', def: 0.35, fmt: (v) => Math.round(v * 110) + '%', delay: true },
+  { i: 16, key: 'dmix', label: 'Mix', def: 0, fmt: pct, delay: true },
+  { i: 17, key: 'dpan', label: 'Pan', def: 0.5, fmt: (v) => panFmt(v), delay: true },
+  { i: 18, key: 'dmode', label: 'Modo', def: 0, fmt: (v) => (v > 0.5 ? 'Ping-pong' : 'Pan') },
+  { i: 19, key: 'dhpi', label: 'HP in', def: 0, fmt: (v) => hpFmt(v), delay: true },
+  { i: 20, key: 'dlpi', label: 'LP in', def: 1, fmt: (v) => lpFmt(v), delay: true },
+  { i: 21, key: 'dhpf', label: 'HP fb', def: 0.15, fmt: (v) => hpFmt(v), delay: true },
+  { i: 22, key: 'dlpf', label: 'LP fb', def: 0.75, fmt: (v) => lpFmt(v), delay: true },
+  { i: 23, key: 'tq', label: 'Tune', def: 1, fmt: (v) => (v > 0.5 ? 'a semitoni' : 'libero') },
+];
+const filterHz = (v) => 20 * Math.pow(1000, v);
+const hzShort = (f) => (f < 1000 ? Math.round(f) + ' Hz' : (f / 1000).toFixed(1).replace('.', ',') + ' kHz');
+const hpFmt = (v) => (filterHz(v) <= 21 ? 'aperto' : hzShort(filterHz(v)));
+const lpFmt = (v) => (filterHz(v) >= 19000 ? 'aperto' : hzShort(filterHz(v)));
+const RESO = [
+  { i: 0, key: 'dw', label: 'Dry/wet', def: 0.6, fmt: pct, mod: 5 },
+  { i: 1, key: 'freq', label: 'Frequency', def: 0.55, fmt: (v) => noteName(12 + Math.round(v * 60)), mod: 0 },
+  { i: 2, key: 'struct', label: 'Structure', def: 0.5, fmt: pct, mod: 1 },
+  { i: 3, key: 'bright', label: 'Brightness', def: 0.5, fmt: pct, mod: 2 },
+  { i: 4, key: 'damp', label: 'Damping', def: 0.6, fmt: pct, mod: 3 },
+  { i: 5, key: 'rpos', label: 'Position', def: 0.3, fmt: pct, mod: 4 },
+];
+const MODELS = ['Modale', 'Corde simpatiche', 'Corda inarmonica', 'Voce FM', 'Accordi', 'Corda e riverbero'];
+const POLY = [1, 2, 4];
+const SHAPES = ['Seno', 'Triangolo', 'Quadra', 'Rampa'];
+// Global parameters (module 4): master volume, Rings resolution, master clock.
+const MASTER_INDEX = 0, FULL_RES_INDEX = 1, BPM_INDEX = 2, CLOCK_DIV_INDEX = 3;
+const bpmFmt = (v) => String(Math.round(40 + 200 * v)), divFmt = (v) => DIVS[Math.round(v * 7)];
+// Modulation boxes (module 8, index slot * 2 + knob). Knob defaults match the engine.
+const MAX_BOXES = 32;
+const BOX_TYPES = {
+  lfo: { code: 1, name: 'LFO', long: 'LFO', badge: '~', desc: 'Oscillatore lento, da −1 a +1. Il trigger lo fa ripartire.', trig: 'Reset',
+    knobs: [['Velocità', 0.3, (v) => hz(0.02 * Math.pow(1000, v))], ['Forma', 0, (v) => SHAPES[Math.round(v * 3)]]] },
+  sh: { code: 2, name: 'S&H', long: 'Sample & hold', badge: 'S', desc: 'Un valore casuale a ogni trigger, o col suo clock.', trig: 'Trigger',
+    knobs: [['Velocità', 0.35, (v) => hz(0.1 * Math.pow(100, v))], ['Slew', 0.2, (v) => ms(300 * v * v)]] },
+  clock: { code: 3, name: 'Clock', long: 'Clock', badge: 'C', desc: 'Una divisione del clock principale, spostabile. Il trigger la fa ripartire.', trig: 'Reset', pulse: true,
+    knobs: [['Divisione', 2 / 7, divFmt], ['Sposta', 0, pct]] },
+  ad: { code: 4, name: 'AD', long: 'Inviluppo AD', badge: 'AD', desc: 'Sale e scende a ogni trigger, da 0 a 1.', trig: 'Trigger',
+    knobs: [['Attack', 0.3, (v) => ms(Math.pow(2000, v))], ['Decay', 0.5, (v) => ms(5 * Math.pow(2000, v))]] },
+};
+const boxName = (b) => BOX_TYPES[b.type].name + ' ' + b.n;
+const makeBox = (type, slot, k, n) => ({ type, slot, k: k ? k.slice() : BOX_TYPES[type].knobs.map((x) => x[1]), n: n || 1 });
+const standardBoxes = () => [makeBox('lfo', 0, [0.3, 0], 1), makeBox('lfo', 1, [0.15, 0.34], 2), makeBox('sh', 2, null, 1)];
+const envRelFmt = (v) => ms(10 * Math.pow(50, v));
+const envGainFmt = (v) => '×' + (1 + 7 * v).toFixed(1).replace('.', ',');
+// --- System inputs: the operating system lists devices; each channel takes one channel of one device.
+let devices = [], micAllowed = null, merger = null;
+const streams = {};
+const sourceSelects = [];
+async function openStream(id) {
+  if (streams[id]) return streams[id];
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: id }, channelCount: { ideal: 8 },
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  const track = stream.getAudioTracks()[0];
+  const channels = Math.max(1, (track && track.getSettings && track.getSettings().channelCount) || 1);
+  const source = ctx.createMediaStreamSource(stream);
+  const splitter = ctx.createChannelSplitter(Math.max(2, channels));
+  source.connect(splitter);
+  return (streams[id] = { stream, source, splitter, channels });
+}
+async function refreshDevices() {
+  if (!micAllowed) { devices = []; return; }
+  const list = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  const out = [];
+  for (const d of list) {
+    let channels = 1;
+    try { channels = (await openStream(d.deviceId)).channels; } catch (e) {}
+    out.push({ id: d.deviceId, label: d.label || 'Ingresso ' + (out.length + 1), channels });
+  }
+  devices = out;
+}
+function routeLive() {
+  if (!merger) return;
+  Object.values(streams).forEach((st) => { try { st.splitter.disconnect(); } catch (e) {} });
+  for (let ch = 0; ch < 2; ch++) {
+    const sel = S.input[ch].sel;
+    if (!sel.startsWith('dev|')) continue;
+    const [, id, c] = sel.split('|');
+    const st = streams[id];
+    if (st) st.splitter.connect(merger, Math.min(Number(c), st.channels - 1), ch);
+  }
+}
+function fillSelect(select, ch) {
+  const opt = (value, text, disabled) => { const o = document.createElement('option'); o.value = value; o.textContent = text; o.disabled = !!disabled; return o; };
+  const group = (label) => { const g = document.createElement('optgroup'); g.label = label; return g; };
+  select.innerHTML = '';
+  const sys = group('Ingressi del sistema');
+  if (devices.length) devices.forEach((d) => { for (let c = 0; c < d.channels; c++) sys.appendChild(opt(`dev|${d.id}|${c}`, d.channels > 1 ? `${d.label}, canale ${c + 1}` : d.label)); });
+  else sys.appendChild(opt('', micAllowed === false ? 'Non disponibili in questa pagina' : 'Tocca Avvia audio', true));
+  const file = group('File');
+  file.append(opt('fileL', fileData ? 'File caricato, sinistro' : 'File caricato, sinistro (carica un WAV)', !fileData),
+    opt('fileR', fileData ? 'File caricato, destro' : 'File caricato, destro (carica un WAV)', !fileData));
+  select.append(sys, file, opt('none', 'Nessuno'));
+  const want = S.input[ch].sel;
+  if (![...select.options].some((o) => o.value === want && !o.disabled)) select.appendChild(opt(want, want.startsWith('dev|') ? 'Dispositivo non collegato' : 'Non disponibile', true));
+  select.value = want;
+}
+function fillSelects() { sourceSelects.forEach((s, ch) => fillSelect(s, ch)); }
+async function initDevices(permission) {
+  try { const st = await permission; st.getTracks().forEach((t) => t.stop()); micAllowed = true; } catch (e) { micAllowed = false; }
+  await refreshDevices();
+  fillSelects(); routeLive();
+  if (micAllowed && navigator.mediaDevices.addEventListener) {
+    navigator.mediaDevices.addEventListener('devicechange', async () => { await refreshDevices(); fillSelects(); routeLive(); });
+  }
+  return micAllowed;
+}
+// Display order of the looper knobs: what moves most during a performance first.
+const LOOP_ORDER = ['pos', 'speed', 'start', 'end', 'size', 'grains', 'spread', 'tune', 'oct', 'att', 'dec', 'every', 'prob'];
+const RESO_ORDER = ['freq', 'struct', 'bright', 'damp', 'rpos', 'dw'];
+const STATES = ['Vuoto', 'Registra', 'Play', 'Punch-in', 'Sostituisce tutto', 'Overdub'];
+const HINTS = ['Senza loop i grani leggono l’ingresso dal vivo. Tocca REC per registrare.', 'Tocca di nuovo per chiudere il loop.',
+  'Tocco: punch-in. Doppio tocco: tutto. Tieni premuto: overdub.', 'Tocca per fermare e riprendere a suonare.',
+  'Tocca per chiudere: la nuova lunghezza è questa.', 'Rilascia per fermare l’overdub.'];
+
+// --- Matrices ------------------------------------------------------------------
+const A_ROWS = ['Ingresso A', 'Ingresso B', 'Looper A', 'Looper B', 'Grani scelti A', 'Grani scelti B', 'Risonatore A', 'Risonatore B', 'Vocoder A', 'Vocoder B'];
+// The audio matrix joins modules only: every source reaches the output through the mixer.
+const A_COLS = ['A', 'B', 'A', 'B', 'Modulante', 'Portante', 'Modulante', 'Portante'];
+const A_COL_NAMES = ['Looper A', 'Looper B', 'Risonatore A', 'Risonatore B', 'Vocoder A modulante', 'Vocoder A portante', 'Vocoder B modulante', 'Vocoder B portante'];
+const A_ROW_ORDER = [-1, -1, 0, 1, 0, 1, 2, 3, 4, 5];
+const A_COL_ORDER = [0, 1, 2, 3, 4, 4, 5, 5];
+// Mixer strips, by audio source: short label for the centre column.
+const MIX_LABELS = ['In A', 'In B', 'Loop A', 'Loop B', 'Grani A', 'Grani B', 'Ris. A', 'Ris. B', 'Voc A', 'Voc B'];
+const MIX_DEFAULT = (s) => ({ vol: s < 2 ? 0.5 : s >= 6 ? 0.7071 : 0, pan: s % 2 ? 0.65 : 0.35 });
+const volFmt = (v) => { if (v < 0.003) return '−∞'; let db = 20 * Math.log10(2 * v * v); if (Math.abs(db) < 0.05) db = 0; return db.toFixed(1).replace('.', ',').replace('-', '−') + ' dB'; };
+const panFmt = (v) => { const x = Math.round((v - 0.5) * 200); return x === 0 ? 'C' : (x < 0 ? 'S ' : 'D ') + Math.abs(x); };
+// Named rows and columns, so patches read as connections.
+const AR = { inA: 0, inB: 1, loopA: 2, loopB: 3, grA: 4, grB: 5, resA: 6, resB: 7, vocA: 8, vocB: 9 };
+const AC = { loopA: 0, loopB: 1, resA: 2, resB: 3, vocAmod: 4, vocAcar: 5, vocBmod: 6, vocBcar: 7 };
+// Control matrix, in engine indices. Rows: the envelope of every audio source (same order),
+// grain triggers, playheads and the master clock, then one row per box slot. Columns: strums
+// and clock reset, parameters, the pan of every source, then the trigger of every box slot.
+// Only the boxes in use are shown.
+const NE = A_ROWS.length;
+const CR = { grA: NE, grB: NE + 1, headA: NE + 2, headB: NE + 3, clock: NE + 4 };
+const BOX_ROW = NE + 5, CS_COUNT = BOX_ROW + MAX_BOXES;
+const LOOP_KEYS = ['tune', 'pos', 'speed', 'grains', 'spread', 'size'];
+const RESO_KEYS = ['freq', 'struct', 'bright', 'damp', 'rpos', 'dw'];
+const VOC_KEYS = ['formant', 'noise'];
+const LOOP_TARGETS = ['Tune', 'Testina', 'Speed', 'Grani', 'Spread', 'Size'];
+const RESO_TARGETS = ['Freq', 'Struct', 'Bright', 'Damp', 'Pos', 'D/W'];
+const VOC_TARGETS = ['Formant', 'Rumore'];
+// The looper's delay: every continuous parameter, in the engine's order.
+const DELAY_KEYS = ['dtime', 'dfb', 'dmix', 'dpan', 'dhpi', 'dlpi', 'dhpf', 'dlpf'];
+const DELAY_TARGETS = ['Tempo', 'Feedback', 'Mix', 'Pan', 'HP in', 'LP in', 'HP fb', 'LP fb'];
+const CC = {
+  strumA: 0, strumB: 1, clockReset: 2,
+  loop: (ch, k) => 3 + 6 * ch + LOOP_KEYS.indexOf(k),
+  reso: (ch, k) => 15 + 6 * ch + RESO_KEYS.indexOf(k),
+  voc: (ch, k) => 27 + 2 * ch + VOC_KEYS.indexOf(k),
+  delay: (ch, k) => 31 + 8 * ch + DELAY_KEYS.indexOf(k),
+  pan: (s) => 47 + s,
+};
+const FIXED_TRIGGERS = 3, BOX_TRIG = 57, CD_COUNT = BOX_TRIG + MAX_BOXES, TRIGGER_COUNT = FIXED_TRIGGERS + MAX_BOXES;
+const BR = (slot) => BOX_ROW + slot, BT = (slot) => BOX_TRIG + slot;
+const emptyA = () => A_ROWS.map(() => A_COLS.map(() => 0));
+const emptyC = () => Array.from({ length: CS_COUNT }, () => new Array(CD_COUNT).fill(0));
+function basePatch() {
+  const a = emptyA(), c = emptyC();
+  a[AR.inA][AC.loopA] = 1; a[AR.inB][AC.loopB] = 1; a[AR.loopA][AC.resA] = 1; a[AR.loopB][AC.resB] = 1;
+  c[CR.grA][CC.strumA] = 1; c[CR.grB][CC.strumB] = 1;
+  return { a, c, boxes: standardBoxes() };
+}
+const PRESETS = [
+  { name: 'Catena base', make: () => basePatch() },
+  { name: 'Voce sul risonatore', make: () => { const p = basePatch();
+      p.a[AR.inA][AC.vocAmod] = 1; p.a[AR.resA][AC.vocAcar] = 1;
+      p.a[AR.inB][AC.vocBmod] = 1; p.a[AR.resB][AC.vocBcar] = 1; return p; },
+    params: { voc: [{ layout: 0, noise: 0 }, { layout: 0, noise: 0 }] } },
+  { name: 'Corpo che canta', make: () => { const p = basePatch();
+      p.a[AR.inA][AC.vocAmod] = 1; p.a[AR.inB][AC.vocBmod] = 1; return p; },
+    params: { voc: [{ layout: 1, noise: 1 }, { layout: 1, noise: 1 }], reso: [{ damp: 0.75, struct: 0.25 }, { damp: 0.75, struct: 0.25 }] } },
+  { name: 'La voce apre le corde', make: () => { const p = basePatch(); p.c[AR.inA][CC.reso(0, 'damp')] = 0.5; p.c[AR.inA][CC.reso(0, 'bright')] = 0.25; return p; },
+    params: { reso: [{ damp: 0.3, bright: 0.35 }, {}], input: [{ gain: 0.4 }, {}] } },
+  { name: 'Inviluppi incrociati', make: () => { const p = basePatch(); p.c[AR.resA][CC.loop(1, 'grains')] = 0.5; p.c[AR.loopB][CC.reso(0, 'struct')] = -0.5; return p; } },
+  { name: 'Solo grani scelti', make: () => { const p = basePatch(); p.a[AR.loopA][AC.resA] = 0; p.a[AR.grA][AC.resA] = 1; p.c[CR.grA][CC.strumA] = 0; return p; },
+    params: { looper: [{ every: 3 / 12, prob: 0.8, att: 0.95, dec: 0.05, size: 0.4, oct: 4 / 6 }, {}], reso: [{ dw: 1, damp: 0.8 }, {}], model: [5, null], poly: [2, null] } },
+  { name: 'Testine legate', make: () => { const p = basePatch(); p.c[CR.headA][CC.loop(1, 'pos')] = 1; return p; }, params: { looper: [{}, { speed: 0.5, pos: 0 }] } },
+  // Standard boxes: slot 0 LFO 1, slot 1 LFO 2, slot 2 S&H 1. The clock is the fixed master.
+  { name: 'Note casuali', make: () => { const p = basePatch(); p.c[CR.grA][BT(2)] = 1; p.c[BR(2)][CC.loop(0, 'tune')] = 0.25; p.c[BR(2)][CC.reso(0, 'struct')] = 0.5; return p; } },
+  { name: 'Respiro lento', make: () => { const p = basePatch(); p.c[BR(0)][CC.loop(0, 'pos')] = 0.5; p.c[BR(1)][CC.reso(0, 'struct')] = 0.5; p.c[BR(1)][CC.reso(1, 'struct')] = -0.5;
+      p.boxes[0].k[0] = 0.2; p.boxes[1].k[0] = 0.12; return p; } },
+  { name: 'Ritmo dal clock', make: () => { const p = basePatch(); p.c[CR.grA][CC.strumA] = 0; p.c[CR.grB][CC.strumB] = 0;
+      p.c[CR.clock][CC.strumA] = 1; p.c[CR.clock][CC.strumB] = 1; p.c[CR.clock][BT(2)] = 1; p.c[BR(2)][CC.reso(0, 'rpos')] = 0.5; p.c[BR(2)][CC.reso(1, 'struct')] = 0.5;
+      return p; }, params: { clock: { div: 2 / 7 } } },
+  { name: 'Grani che aprono', make: () => { const p = basePatch();
+      p.boxes.push(makeBox('ad', 3, [0.05, 0.45], 1), makeBox('ad', 4, [0.05, 0.45], 2));
+      p.c[CR.grA][BT(3)] = 1; p.c[BR(3)][CC.reso(0, 'bright')] = 0.5; p.c[BR(3)][CC.reso(0, 'damp')] = 0.25;
+      p.c[CR.grB][BT(4)] = 1; p.c[BR(4)][CC.reso(1, 'bright')] = 0.5; p.c[BR(4)][CC.reso(1, 'damp')] = 0.25; return p; },
+    params: { reso: [{ bright: 0.3, damp: 0.45 }, { bright: 0.3, damp: 0.45 }] } },
+  { name: 'Spazio mobile', make: () => { const p = basePatch();
+      p.c[BR(0)][CC.pan(AR.resA)] = 0.4; p.c[BR(0)][CC.pan(AR.resB)] = -0.4; p.c[BR(1)][CC.pan(AR.inA)] = 0.3; p.c[BR(1)][CC.pan(AR.inB)] = -0.3;
+      p.boxes[0].k[0] = 0.25; return p; } },
+  { name: 'Eco nello spazio', make: () => { const p = basePatch();
+      p.c[BR(0)][CC.delay(1, 'dpan')] = 0.8; p.c[BR(1)][CC.delay(1, 'dlpf')] = -0.3; return p; },
+    params: { looper: [{ dmix: 0.45, dfb: 0.5, dmode: 1, dtime: 0.66 }, { dmix: 0.4, dfb: 0.45, dmode: 0, dtime: 0.58 }] } },
+  { name: 'Matrici vuote', make: () => ({ a: emptyA(), c: emptyC(), boxes: standardBoxes() }) },
+];
+
+// --- State ---------------------------------------------------------------------
+function defaultState() {
+  const looper = [0, 1].map(() => Object.fromEntries(LOOPER.map((p) => [p.key, p.def])));
+  const reso = [0, 1].map(() => Object.fromEntries(RESO.map((p) => [p.key, p.def])));
+  reso[1].freq = (52 - 12) / 60;
+  const input = [{ sel: 'none', level: 0.5, rel: 0.5, gain: 0.3 }, { sel: 'none', level: 0.5, rel: 0.5, gain: 0.3 }];
+  const { a, c, boxes } = basePatch();
+  return { looper, reso, model: [0, 1], poly: [0, 0], input, envOther: { rel: 0.5, gain: 0.3 },
+    voc: [0, 1].map(() => ({ layout: 1, rel: 0.5, formant: 0.5, noise: 0 })), fullRes: true, recSync: [false, false],
+    mix: A_ROWS.map((_, s) => MIX_DEFAULT(s)), clock: { bpm: 0.4, div: 3 / 7 }, midiMap: {},
+    a, c, boxes, trim: new Array(CS_COUNT).fill(1), master: 0.8, preset: 0, stripCollapsed: false };
+}
+let S = defaultState();
+let fileData = null, filePlaying = false;
+try {
+  const saved = JSON.parse(localStorage.getItem('gr-proto-v9') || 'null');
+  if (saved && saved.a && saved.c && saved.looper && saved.input && saved.voc && Array.isArray(saved.boxes) && saved.mix && saved.clock
+      && saved.a[0].length === A_COLS.length && saved.c.length === CS_COUNT && saved.trim.length === CS_COUNT
+      && (saved.c[0].length === CD_COUNT || saved.c[0].length === CD_COUNT - 16)) {
+    // Earlier layout without the delay columns: they go in before the pans.
+    if (saved.c[0].length === CD_COUNT - 16) saved.c = saved.c.map((row) => [...row.slice(0, 31), ...new Array(16).fill(0), ...row.slice(31)]);
+    saved.looper.forEach((lp) => LOOPER.forEach((p) => { if (lp[p.key] == null) lp[p.key] = p.def; }));
+    S = Object.assign(S, saved);
+    S.input.forEach((x) => { if (x.sel === 'voice') x.sel = 'none'; });
+  }
+} catch (e) {}
+let saveTimer = 0;
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { try { localStorage.setItem('gr-proto-v9', JSON.stringify(S)); } catch (e) {} }, 400); }
+
+// --- Engine connection -----------------------------------------------------------
+let ctx = null, node = null, ready = false, engineHeard = false;
+const live = [0, 1].map(() => ({ state: 0, length: 0, playhead: 0, grains: new Float32Array(0), overview: new Float32Array(320) }));
+let destValues = new Float32Array(CD_COUNT), sourceValues = new Float32Array(CS_COUNT), pulses = new Uint32Array(CS_COUNT), fires = new Uint32Array(TRIGGER_COUNT);
+const statusEl = document.getElementById('status');
+function setStatus(text, err) { statusEl.textContent = text; statusEl.classList.toggle('err', !!err); }
+function send(m, transfer) { if (node && ready) node.port.postMessage(m, transfer || []); }
+const sendLooper = (ch, p) => send({ t: 'param', m: ch, i: p.i, v: S.looper[ch][p.key] });
+const sendReso = (ch, p) => send({ t: 'param', m: 2 + ch, i: p.i, v: S.reso[ch][p.key] });
+const sendBoxKnobs = (b) => b.k.forEach((v, i) => send({ t: 'param', m: 8, i: b.slot * 2 + i, v }));
+const sendMix = (s) => { send({ t: 'param', m: 9, i: s * 2, v: S.mix[s].vol }); send({ t: 'param', m: 9, i: s * 2 + 1, v: S.mix[s].pan }); };
+const sendClock = () => { send({ t: 'param', m: 4, i: BPM_INDEX, v: S.clock.bpm }); send({ t: 'param', m: 4, i: CLOCK_DIV_INDEX, v: S.clock.div }); };
+function sendBoxes() {
+  const used = new Map(S.boxes.map((b) => [b.slot, b]));
+  for (let slot = 0; slot < MAX_BOXES; slot++) send({ t: 'box', slot, type: used.has(slot) ? BOX_TYPES[used.get(slot).type].code : 0 });
+  S.boxes.forEach(sendBoxKnobs);
+}
+function sendInput(ch) {
+  const x = S.input[ch];
+  // The page routes the chosen input to the engine's left (A) or right (B).
+  send({ t: 'param', m: 5, i: ch * 2, v: ch * 0.5 });
+  send({ t: 'inputMode', ch, mode: x.sel.startsWith('dev|') ? 'live' : x.sel });
+  send({ t: 'param', m: 5, i: ch * 2 + 1, v: x.level });
+  send({ t: 'param', m: 6, i: ch * 2, v: x.rel });
+  send({ t: 'param', m: 6, i: ch * 2 + 1, v: x.gain });
+}
+function sendEnvOther() {
+  for (let a = 2; a < NE; a++) {  // every source except the two inputs, vocoders included
+    send({ t: 'param', m: 6, i: a * 2, v: S.envOther.rel });
+    send({ t: 'param', m: 6, i: a * 2 + 1, v: S.envOther.gain });
+  }
+}
+function sendPickers() {
+  for (let ch = 0; ch < 2; ch++) {
+    send({ t: 'param', m: 2 + ch, i: 6, v: S.model[ch] / 5 });
+    send({ t: 'param', m: 2 + ch, i: 7, v: S.poly[ch] / 2 });
+  }
+}
+const VOC_INDEX = { layout: 0, rel: 1, formant: 2, noise: 3 };
+function sendVoc(ch) { for (const k in VOC_INDEX) send({ t: 'param', m: 7, i: ch * 4 + VOC_INDEX[k], v: S.voc[ch][k] }); }
+function sendPins() {
+  send({ t: 'clearPins' });
+  S.a.forEach((row, s) => row.forEach((v, d) => { if (v) send({ t: 'apin', s, d, v }); }));
+  S.c.forEach((row, s) => row.forEach((v, d) => { if (v) send({ t: 'cpin', s, d, v }); }));
+  S.trim.forEach((v, s) => send({ t: 'trim', s, v }));
+}
+function pushAll() {
+  for (let ch = 0; ch < 2; ch++) send({ t: 'recSync', ch, on: !!S.recSync[ch] });
+  for (let ch = 0; ch < 2; ch++) { LOOPER.forEach((p) => sendLooper(ch, p)); RESO.forEach((p) => sendReso(ch, p)); sendInput(ch); }
+  sendEnvOther();
+  sendPickers();
+  send({ t: 'param', m: 4, i: MASTER_INDEX, v: S.master });
+  send({ t: 'param', m: 4, i: FULL_RES_INDEX, v: S.fullRes ? 1 : 0 });
+  sendVoc(0); sendVoc(1);
+  A_ROWS.forEach((_, s) => sendMix(s));
+  sendClock();
+  sendBoxes();  // before the pins: a new box clears its row and column in the engine
+  sendPins();
+  if (fileData) send({ t: 'file', l: fileData.l.slice(), r: fileData.r.slice() });
+  send({ t: 'filePlay', on: filePlaying });
+}
+function b64ToBytes(b64) { const bin = atob(b64); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+let pendingPermission = null;
+async function startAudio() {
+  if (ctx) { if (ctx.state !== 'running') await ctx.resume(); return; }
+  // Playing and recording at once; on iPhone this also ignores the silent switch.
+  try { if (navigator.audioSession) navigator.audioSession.type = 'play-and-record'; } catch (e) {}
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC || !('AudioWorkletNode' in window)) { setStatus('Questo browser non supporta l’audio necessario. Usa Safari o Chrome aggiornati.', true); return; }
+  const permission = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
+    ? navigator.mediaDevices.getUserMedia({ audio: true }) : Promise.reject(new Error('no media devices'));
+  permission.catch(() => {});
+  pendingPermission = permission;
+  try { ctx = new AC({ sampleRate: 48000, latencyHint: 'interactive' }); } catch (e) { ctx = new AC(); }
+  setStatus('Avvio del motore…');
+  try {
+    try { await ctx.audioWorklet.addModule('worklet.js'); }
+    catch (e) { await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([WORKLET_SRC], { type: 'application/javascript' }))); }
+    node = new AudioWorkletNode(ctx, 'gr-engine', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2],
+      channelCount: 2, channelCountMode: 'explicit', channelInterpretation: 'discrete' });
+    merger = ctx.createChannelMerger(2);
+    merger.connect(node);
+    node.port.onmessage = onEngine;
+    node.connect(ctx.destination);
+    const bytes = b64ToBytes(WASM_B64);
+    node.port.postMessage({ t: 'init', bytes: bytes.buffer }, [bytes.buffer]);
+    await ctx.resume();
+  } catch (e) { setStatus('Il motore audio non si è avviato: ' + (e && e.message || e), true); }
+}
+// Recorded loops are saved with the instrument's state: 16-bit, one per looper.
+// They come back when the audio starts. Where the browser keeps no storage, nothing happens.
+const loopStore = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((resolve, reject) => {
+      try {
+        const req = indexedDB.open('fukumi', 1);
+        req.onupgradeneeded = () => req.result.createObjectStore('loops');
+        req.onsuccess = () => resolve(this.db = req.result);
+        req.onerror = () => reject(req.error);
+      } catch (e) { reject(e); }
+    });
+  },
+  async put(ch, data) {
+    const db = await this.open();
+    const pcm = new Int16Array(data.length);
+    for (let i = 0; i < data.length; i++) pcm[i] = Math.max(-32767, Math.min(32767, Math.round(data[i] * 32767)));
+    db.transaction('loops', 'readwrite').objectStore('loops').put({ rate: 48000, pcm }, 'looper' + ch);
+  },
+  async remove(ch) { const db = await this.open(); db.transaction('loops', 'readwrite').objectStore('loops').delete('looper' + ch); },
+  async get(ch) {
+    const db = await this.open();
+    return new Promise((resolve) => {
+      const req = db.transaction('loops').objectStore('loops').get('looper' + ch);
+      req.onsuccess = () => resolve(req.result || null); req.onerror = () => resolve(null);
+    });
+  },
+};
+const loopSaved = [null, null], loopSaveTimer = [0, 0];
+// Called on every report: a loop that changed and now plays is saved a moment later; a cleared one is forgotten.
+function watchLoops() {
+  for (let ch = 0; ch < 2; ch++) {
+    const L = live[ch];
+    if (L.state === 2 && !L.armed && L.version !== loopSaved[ch]) {
+      if (!loopSaveTimer[ch]) loopSaveTimer[ch] = setTimeout(() => { loopSaveTimer[ch] = 0; loopSaved[ch] = live[ch].version; send({ t: 'loopGet', ch }); }, 1500);
+    } else if (L.state === 0 && loopSaved[ch] !== 'none') {
+      clearTimeout(loopSaveTimer[ch]); loopSaveTimer[ch] = 0; loopSaved[ch] = 'none';
+      loopStore.remove(ch).catch(() => {});
+    }
+  }
+}
+async function restoreLoops() {
+  for (let ch = 0; ch < 2; ch++) {
+    try {
+      const rec = await loopStore.get(ch);
+      if (!rec || !rec.pcm || !rec.pcm.length) continue;
+      const data = new Float32Array(rec.pcm.length);
+      for (let i = 0; i < data.length; i++) data[i] = rec.pcm[i] / 32767;
+      loopSaved[ch] = null;
+      send({ t: 'loopSet', ch, data }, [data.buffer]);
+      setStatus('Loop ' + (ch ? 'B' : 'A') + ' ripreso dalla sessione precedente: ' + (data.length / 48000).toFixed(1).replace('.', ',') + ' s.');
+    } catch (e) {}
+  }
+}
+
+// While the instrument plays, the screen stays on (where the browser allows it).
+let wakeLock = null;
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch (e) {}
+}
+// Back in the foreground, or after a phone call: the audio starts again where the system stopped it.
+function resumeAudio() { if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') ctx.resume().catch(() => {}); }
+window.fukumiResume = resumeAudio;
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && ready) { keepAwake(); resumeAudio(); } });
+function onEngine(ev) {
+  const m = ev.data;
+  if (m.t === 'ready') {
+    ready = true;
+    pushAll();
+    document.body.classList.add('live');
+    const rate = ctx.sampleRate;
+    const base = 'Audio attivo a ' + (rate / 1000).toLocaleString('it-IT') + ' kHz' + (rate !== 48000 ? '. Il motore è tarato a 48 kHz: le altezze saranno spostate' : '');
+    setStatus(base + '. Cerco gli ingressi del sistema…');
+    initDevices(pendingPermission).then((ok) => {
+      const n = devices.reduce((t, d) => t + d.channels, 0);
+      setStatus(ok ? base + '. ' + n + (n === 1 ? ' ingresso del sistema' : ' ingressi del sistema') + ': scegli la sorgente di A e di B.'
+        : base + '. Qui la pagina non può usare il microfono: carica un WAV e sceglilo come sorgente.');
+    });
+    startBtn.textContent = 'Audio attivo';
+    keepAwake();
+    restoreLoops();
+  } else if (m.t === 'error') {
+    setStatus('Il motore audio non si è avviato: ' + m.message, true);
+  } else if (m.t === 'state') {
+    engineHeard = true;
+    m.channels.forEach((c, i) => { Object.assign(live[i], { state: c.state, armed: !!c.armed, live: !!c.live, version: c.version, length: c.length, playhead: c.playhead, grains: c.grains }); if (c.overview) live[i].overview = c.overview; });
+    destValues = m.dest; sourceValues = m.source;
+    m.pulses.forEach((v, i) => { if (v !== pulses[i]) flashRow(i); });
+    m.fires.forEach((v, i) => { if (v !== fires[i]) flashCol(i < FIXED_TRIGGERS ? i : BOX_TRIG + i - FIXED_TRIGGERS); });
+    pulses = m.pulses; fires = m.fires;
+    updateChannelText();
+    watchLoops();
+  } else if (m.t === 'loop') {
+    if (m.data) loopStore.put(m.ch, m.data).catch(() => {});
+  }
+}
+
+// --- Knobs ---------------------------------------------------------------------
+const SVGNS = 'http://www.w3.org/2000/svg';
+const A0 = -135, A1 = 135;
+const polar = (r, deg) => { const a = (deg - 90) * Math.PI / 180; return [28 + r * Math.cos(a), 28 + r * Math.sin(a)]; };
+function arc(r, v0, v1) {
+  const a0 = A0 + (A1 - A0) * v0, a1 = A0 + (A1 - A0) * v1;
+  const [x0, y0] = polar(r, a0), [x1, y1] = polar(r, a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+}
+function svgEl(tag, attrs, parent) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) { const v = String(attrs[k]); if (v.startsWith('var(')) e.style.setProperty(k, v); else e.setAttribute(k, v); }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const modKnobs = [];  // knobs whose modulated value is drawn
+// MIDI learn: every learnable control registers here by a stable id; S.midiMap maps "channel:cc" to an id.
+const controls = new Map();
+const ccLabel = (key) => { const [ch, cc] = key.split(':').map(Number); return 'CC ' + cc + ', can. ' + (ch + 1); };
+function keyFor(id) { return Object.keys(S.midiMap).find((k) => S.midiMap[k] === id) || null; }
+function paintLearnTag(id) {
+  const c = controls.get(id); if (!c) return;
+  const k = keyFor(id);
+  if (k) c.el.dataset.cc = ccLabel(k).replace(', can. ', '/'); else delete c.el.dataset.cc;
+}
+function registerControl(id, name, apply, el) { el.dataset.learn = id; controls.set(id, { name, apply, el }); paintLearnTag(id); }
+function forgetControls(prefix) {
+  [...controls.keys()].filter((id) => id.startsWith(prefix)).forEach((id) => controls.delete(id));
+  Object.keys(S.midiMap).forEach((k) => { if (S.midiMap[k].startsWith(prefix)) delete S.midiMap[k]; });
+}
+// get/set read and write a normalised value; modIndex: control-destination index or null;
+// learn: { id, name } to make the knob MIDI-learnable.
+function makeKnob(label, def, fmt, get, set, modIndex, learn) {
+  const cell = document.createElement('div'); cell.className = 'kcell';
+  const name = document.createElement('div'); name.className = 'silk'; name.textContent = label;
+  const knob = document.createElement('div'); knob.className = 'knob'; knob.tabIndex = 0; knob.setAttribute('role', 'slider'); knob.setAttribute('aria-label', label);
+  const svg = svgEl('svg', { viewBox: '0 0 56 56', 'aria-hidden': 'true' }); knob.appendChild(svg);
+  svgEl('path', { d: arc(25.5, 0, 1), fill: 'none', stroke: 'var(--rule)', 'stroke-width': 2, 'stroke-linecap': 'round' }, svg);
+  // Where modulation takes the parameter: a haze over the range it wanders through.
+  const aura = svgEl('path', { fill: 'none', stroke: 'var(--ch)', 'stroke-width': 9, 'stroke-linecap': 'round', opacity: 0, filter: 'url(#haze)' }, svg);
+  const valArc = svgEl('path', { fill: 'none', stroke: 'var(--ch)', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, svg);
+  svgEl('circle', { cx: 28, cy: 28, r: 19, fill: 'var(--hollow)' }, svg);
+  const ptr = svgEl('line', { stroke: 'var(--ink)', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, svg);
+  const val = document.createElement('div'); val.className = 'kval';
+  cell.append(name, knob, val);
+  let settleUntil = 0;  // after the knob itself moves, the engine needs a moment to follow
+  function render() {
+    const v = get();
+    settleUntil = performance.now() + 200;
+    valArc.setAttribute('d', v > 0.002 ? arc(25.5, 0, v) : 'M0 0');
+    const a = A0 + (A1 - A0) * v, [x0, y0] = polar(7, a), [x1, y1] = polar(15, a);
+    ptr.setAttribute('x1', x0); ptr.setAttribute('y1', y0); ptr.setAttribute('x2', x1); ptr.setAttribute('y2', y1);
+    const f = fmt(v); val.textContent = f; knob.setAttribute('aria-valuetext', f);
+  }
+  // The value surfaces while the hand is on the knob, then sinks back.
+  let hideTimer = 0;
+  const reveal = () => { cell.classList.add('reveal'); clearTimeout(hideTimer); hideTimer = setTimeout(() => cell.classList.remove('reveal'), 1400); };
+  function change(v) { v = Math.min(1, Math.max(0, v)); reveal(); if (v === get()) return; set(v); render(); save(); }
+  let startY = 0, startV = 0, lastTap = 0, dragging = false;
+  knob.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); knob.setPointerCapture(e.pointerId); dragging = true; reveal();
+    const now = performance.now();
+    if (now - lastTap < 300) { change(def); lastTap = 0; } else lastTap = now;
+    startY = e.clientY; startV = get();
+  });
+  knob.addEventListener('pointermove', (e) => { if (dragging) change(startV + (startY - e.clientY) / (e.shiftKey ? 900 : 200)); });
+  const end = () => { dragging = false; };
+  knob.addEventListener('pointerup', end); knob.addEventListener('pointercancel', end);
+  knob.addEventListener('keydown', (e) => {
+    const step = e.altKey ? 0.002 : 0.02;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowRight') { change(get() + step); e.preventDefault(); }
+    if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') { change(get() - step); e.preventDefault(); }
+  });
+  render();
+  cell.refresh = render;
+  if (learn) registerControl(learn.id, learn.name, (v) => change(v), cell);
+  if (modIndex != null) {
+    // The haze follows what modulation adds to the knob: the recent extremes of that
+    // offset, slowly drawing in. Turning the knob itself never makes a haze.
+    let lo = 0, hi = 0;
+    modKnobs.push(() => {
+      if (!engineHeard || cell.classList.contains('reveal') || performance.now() < settleUntil) {
+        lo = hi = 0; aura.setAttribute('opacity', 0); return;
+      }
+      const v = get(), d = destValues[modIndex] - v;
+      lo = d < lo ? d : lo + (d - lo) * 0.03;
+      hi = d > hi ? d : hi + (d - hi) * 0.03;
+      if (Math.abs(d) < 0.004 && hi - lo < 0.01) { aura.setAttribute('opacity', 0); return; }
+      const a0 = Math.max(0, v + lo - 0.015), a1 = Math.min(1, v + Math.max(hi, lo + 0.03) + 0.015);
+      aura.setAttribute('d', arc(25.5, a0, Math.max(a1, a0 + 0.01)));
+      aura.setAttribute('opacity', 0.5);
+    });
+  }
+  return cell;
+}
+
+
+// --- Page 1: two mirrored halves ---------------------------------------------------
+const stage = document.getElementById('suona');
+const ui = [];
+const byKey = (list, key) => list.find((p) => p.key === key);
+function makeHalf(ch) {
+  const L = ch ? 'B' : 'A';
+  const half = document.createElement('div');
+  half.className = 'half' + (ch ? ' mirror' : '');
+  half.dataset.ch = ch;
+  half.setAttribute('aria-label', 'Canale ' + L);
+  half.innerHTML = `
+    <section class="sec s-in" aria-label="Ingresso ${L}">
+      <div class="row"><span class="badge">${L}</span><span class="stitle">Ingresso ${L}</span><span class="spacer"></span>
+        <span class="silk">Inviluppo</span><span class="meter" aria-hidden="true"><i></i></span></div>
+      <div class="row wrapnarrow"><select class="srcsel" id="src-${L}" aria-label="Sorgente dell'ingresso ${L}"></select><div class="knobs k3 k-in"></div></div>
+      <div class="mixrow" data-mix="in"></div>
+    </section>
+    <section class="sec s-res" aria-label="Risonatore ${L}">
+      <div class="row wrapnarrow"><span class="badge">${L}</span><span class="stitle">Risonatore ${L}</span><span class="spacer"></span>
+        <button class="btn mini" type="button" data-act="model"><small>Modello</small><span></span></button>
+        <button class="btn mini" type="button" data-act="poly"><small>Voci</small><span></span></button></div>
+      <div class="knobs k6 k-res"></div>
+      <div class="row wrapnarrow vrow"><div class="vhead"><span class="silk">Vocoder ${L}</span>
+        <button class="btn mini" type="button" data-act="layout"><small>Banco</small><span></span></button>
+        <span class="meter vmeter" aria-hidden="true"><i></i></span></div><div class="knobs k3 k-voc"></div></div>
+      <div class="mixrow" data-mix="res"></div>
+    </section>
+    <section class="sec s-loop" aria-label="Looper granulare ${L}">
+      <div class="row"><span class="badge">${L}</span><span class="stitle">Looper ${L}</span><span class="pill" data-s="0">Vuoto</span><span class="spacer"></span>
+        <button class="btn mini" type="button" data-act="tq" aria-pressed="true" title="Tune a semitoni interi, o libero (anche tra i semitoni)"><small>Tune</small><span></span></button><span class="len">0,0 s</span></div>
+      <canvas class="screen" aria-label="Display del looper ${L}"></canvas>
+      <div class="row"><button class="rec" type="button" aria-label="REC looper ${L}" data-s="0"><span class="led"></span></button>
+        <button class="btn mini rsync" type="button" data-act="sync" aria-pressed="false" title="REC parte e chiude sul battito del clock principale"><i class="tick" aria-hidden="true"></i>Sync</button>
+        <div class="hint">${HINTS[0]}</div>
+        <button class="btn mini" type="button" data-act="undo">Undo</button><button class="btn mini" type="button" data-act="clear">Svuota</button></div>
+      <div class="knobs k7 k-loop"></div>
+      <div class="drow"><div class="row"><span class="silk">Delay ${L}</span>
+        <button class="btn mini" type="button" data-act="dmode" aria-pressed="false"><small>Modo</small><span></span></button>
+        <span class="hint dhint"></span></div>
+        <div class="knobs k8 k-dly"></div></div>
+      <div class="mixrow" data-mix="loop"></div>
+    </section>`;
+  stage.appendChild(half);
+
+  // Input: source from the operating system (or test sources), level, envelope.
+  const select = half.querySelector('.srcsel');
+  select.addEventListener('change', async () => {
+    S.input[ch].sel = select.value;
+    if (select.value.startsWith('dev|')) { try { await openStream(select.value.split('|')[1]); } catch (e) { setStatus('Non riesco ad aprire questo ingresso.', true); } }
+    routeLive(); sendInput(ch); save();
+  });
+  sourceSelects[ch] = select;
+  const kIn = half.querySelector('.k-in');
+  [['Livello', 'level', 0.5, (v) => (v === 0 ? '−∞' : (20 * Math.log10(2 * v)).toFixed(1).replace('.', ',').replace('-', '−') + ' dB')],
+   ['Rilascio', 'rel', 0.5, envRelFmt], ['Guadagno', 'gain', 0.3, envGainFmt]].forEach(([label, key, def, fmt]) => {
+    const k = makeKnob(label, def, fmt, () => S.input[ch][key], (v) => { S.input[ch][key] = v; sendInput(ch); }, null,
+      { id: `in.${ch}.${key}`, name: `Ingresso ${L}: ${label}` });
+    refreshers.push(k.refresh); kIn.appendChild(k);
+  });
+
+  // Resonator.
+  const kRes = half.querySelector('.k-res');
+  RESO_ORDER.forEach((key) => {
+    const p = byKey(RESO, key);
+    const k = makeKnob(p.label, p.def, p.fmt, () => S.reso[ch][p.key], (v) => { S.reso[ch][p.key] = v; sendReso(ch, p); }, CC.reso(ch, RESO_KEYS[p.mod]),
+      { id: `reso.${ch}.${p.key}`, name: `Risonatore ${L}: ${p.label}` });
+    refreshers.push(k.refresh); kRes.appendChild(k);
+  });
+  const modelBtn = half.querySelector('[data-act="model"]'), polyBtn = half.querySelector('[data-act="poly"]');
+  const paintPick = () => {
+    modelBtn.querySelector('span').textContent = MODELS[S.model[ch]];
+    polyBtn.querySelector('span').textContent = String(POLY[S.poly[ch]]);
+  };
+  modelBtn.addEventListener('click', () => { S.model[ch] = (S.model[ch] + 1) % 6; sendPickers(); paintPick(); save(); });
+  polyBtn.addEventListener('click', () => { S.poly[ch] = (S.poly[ch] + 1) % 3; sendPickers(); paintPick(); save(); });
+  paintPick(); refreshers.push(paintPick);
+
+  // Vocoder: its body is this resonator; modulator and carrier come from the audio matrix.
+  const kVoc = half.querySelector('.k-voc');
+  [['Rilascio', 'rel', 0.5, (v) => ms(5 * Math.pow(100, v)), null],
+   ['Formant', 'formant', 0.5, (v) => { const x = Math.round((v - 0.5) * 24); return (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x) + ' st'; }, CC.voc(ch, 'formant')],
+   ['Rumore', 'noise', 0, pct, CC.voc(ch, 'noise')]].forEach(([label, key, def, fmt, modIndex]) => {
+    const k = makeKnob(label, def, fmt, () => S.voc[ch][key], (v) => { S.voc[ch][key] = v; sendVoc(ch); }, modIndex,
+      { id: `voc.${ch}.${key}`, name: `Vocoder ${L}: ${label}` });
+    refreshers.push(k.refresh); kVoc.appendChild(k);
+  });
+  const layoutBtn = half.querySelector('[data-act="layout"]');
+  const paintLayout = () => { layoutBtn.querySelector('span').textContent = S.voc[ch].layout ? 'Corpo' : 'Bande'; };
+  layoutBtn.addEventListener('click', () => { S.voc[ch].layout = S.voc[ch].layout ? 0 : 1; sendVoc(ch); paintLayout(); save(); });
+  paintLayout(); refreshers.push(paintLayout);
+
+  // Looper.
+  const kLoop = half.querySelector('.k-loop');
+  LOOP_ORDER.forEach((key) => {
+    const p = byKey(LOOPER, key);
+    // Tune reads in whole semitones or, when free, in hundredths of one.
+    const fmt = key === 'tune' ? (v) => { const x = v * 24 - 12; if (S.looper[ch].tq > 0.5) return sign(Math.round(x)) + ' st';
+      const r = Math.round(x * 100) / 100; return (r > 0 ? '+' : r < 0 ? '−' : '') + Math.abs(r).toFixed(2).replace('.', ',') + ' st'; } : p.fmt;
+    const k = makeKnob(p.label, p.def, fmt, () => S.looper[ch][p.key], (v) => { S.looper[ch][p.key] = v; sendLooper(ch, p); }, p.mod != null ? CC.loop(ch, LOOP_KEYS[p.mod]) : null,
+      { id: `loop.${ch}.${p.key}`, name: `Looper ${L}: ${p.label}` });
+    refreshers.push(k.refresh); kLoop.appendChild(k);
+  });
+  // Delay: part of the looper. In Ping-pong the echoes place themselves, so its pan is off.
+  const kDly = half.querySelector('.k-dly');
+  let dpanCell = null;
+  LOOPER.filter((p) => p.delay).forEach((p) => {
+    const k = makeKnob(p.label, p.def, p.fmt, () => S.looper[ch][p.key], (v) => { S.looper[ch][p.key] = v; sendLooper(ch, p); },
+      CC.delay(ch, p.key), { id: `loop.${ch}.${p.key}`, name: `Delay ${L}: ${p.label}` });
+    if (p.key === 'dpan') dpanCell = k;
+    refreshers.push(k.refresh); kDly.appendChild(k);
+  });
+  const modeBtn = half.querySelector('[data-act="dmode"]'), dhint = half.querySelector('.dhint');
+  const modeP = byKey(LOOPER, 'dmode');
+  const paintMode = () => {
+    const pp = S.looper[ch].dmode > 0.5;
+    modeBtn.querySelector('span').textContent = pp ? 'Ping-pong' : 'Pan';
+    modeBtn.setAttribute('aria-pressed', String(pp));
+    dpanCell.classList.toggle('off', pp);
+    dpanCell.querySelector('.knob').setAttribute('aria-disabled', String(pp));
+    dhint.textContent = pp ? 'Gli echi si alternano tra sinistra e destra: il pan è spento' : '';
+  };
+  const setMode = (pp) => { S.looper[ch].dmode = pp ? 1 : 0; sendLooper(ch, modeP); paintMode(); repaintControl(); save(); };
+  modeBtn.addEventListener('click', () => setMode(!(S.looper[ch].dmode > 0.5)));
+  registerControl(`loop.${ch}.dmode`, `Delay ${L}: Modo`, (v) => { if ((v >= 0.5) !== (S.looper[ch].dmode > 0.5)) setMode(v >= 0.5); }, modeBtn);
+  paintMode(); refreshers.push(paintMode);
+
+  const rec = half.querySelector('.rec');
+  let recPointer = null;
+  rec.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    if (!ready) { setStatus('Prima tocca Avvia audio.', true); return; }
+    recPointer = e.pointerId; rec.setPointerCapture(e.pointerId); rec.classList.add('down'); send({ t: 'rec', ch, p: true });
+  });
+  const recUp = (e) => { if (recPointer !== e.pointerId) return; recPointer = null; rec.classList.remove('down'); send({ t: 'rec', ch, p: false }); };
+  rec.addEventListener('pointerup', recUp); rec.addEventListener('pointercancel', recUp);
+  rec.addEventListener('keydown', (e) => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); send({ t: 'rec', ch, p: true }); } });
+  rec.addEventListener('keyup', (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); send({ t: 'rec', ch, p: false }); } });
+  // REC from a controller: a button that sends 127 when pressed and 0 when released.
+  let midiRec = false;
+  registerControl(`rec.${ch}`, `REC looper ${L}`, (v) => {
+    const on = v >= 0.5; if (on === midiRec) return; midiRec = on;
+    if (!ready) return;
+    rec.classList.toggle('down', on); send({ t: 'rec', ch, p: on });
+  }, rec);
+  // Tune in whole semitones, or free.
+  const tqBtn = half.querySelector('[data-act="tq"]'), tqP = byKey(LOOPER, 'tq');
+  const paintTq = () => { const q = S.looper[ch].tq > 0.5; tqBtn.querySelector('span').textContent = q ? 'a semitoni' : 'libero'; tqBtn.setAttribute('aria-pressed', String(q)); };
+  const setTq = (q) => { S.looper[ch].tq = q ? 1 : 0; sendLooper(ch, tqP); paintTq(); refreshers.forEach((r) => r()); save(); };
+  tqBtn.addEventListener('click', () => setTq(!(S.looper[ch].tq > 0.5)));
+  registerControl(`loop.${ch}.tq`, `Looper ${L}: Tune a semitoni`, (v) => { if ((v >= 0.5) !== (S.looper[ch].tq > 0.5)) setTq(v >= 0.5); }, tqBtn);
+  paintTq(); refreshers.push(paintTq);
+  // Sync: REC waits for the next tick of the master clock.
+  const syncBtn = half.querySelector('[data-act="sync"]');
+  const paintSync = () => syncBtn.setAttribute('aria-pressed', String(!!S.recSync[ch]));
+  const setSync = (on) => { S.recSync[ch] = on; send({ t: 'recSync', ch, on }); paintSync(); save(); };
+  syncBtn.addEventListener('click', () => setSync(!S.recSync[ch]));
+  registerControl(`sync.${ch}`, `Looper ${L}: Sync del REC`, (v) => { if ((v >= 0.5) !== !!S.recSync[ch]) setSync(v >= 0.5); }, syncBtn);
+  paintSync(); refreshers.push(paintSync);
+  half.querySelector('[data-act="undo"]').addEventListener('click', () => send({ t: 'undo', ch }));
+  half.querySelector('[data-act="clear"]').addEventListener('click', () => send({ t: 'clear', ch }));
+  ui[ch] = { canvas: half.querySelector('canvas'), pill: half.querySelector('.pill'), len: half.querySelector('.len'), rec, syncTick: syncBtn.querySelector('.tick'),
+    mixRows: { in: half.querySelector('[data-mix="in"]'), res: half.querySelector('[data-mix="res"]'), loop: half.querySelector('[data-mix="loop"]') },
+    hint: half.querySelector('.hint'), meter: half.querySelector('.meter i'), vmeter: half.querySelector('.vmeter i') };
+}
+const refreshers = [];
+makeHalf(0); makeHalf(1);
+
+// Mixer, in the middle: every sound source reaches the output through its volume and pan.
+const mixLeds = [], mixStrips = [], mixCells = {};
+function makeMixCell(cls, label, sources) {
+  const cell = document.createElement('section'); cell.className = 'mix ' + cls; cell.setAttribute('aria-label', 'Volumi: ' + label);
+  sources.forEach((s) => {
+    const strip = document.createElement('div'); strip.className = 'mstrip ' + (s % 2 ? 'b' : 'a');
+    const name = document.createElement('div'); name.className = 'mlabel'; name.innerHTML = '<i></i><span></span>';
+    name.querySelector('span').textContent = MIX_LABELS[s];
+    mixLeds[s] = name.querySelector('i');
+    const d = MIX_DEFAULT(s);
+    const vol = makeKnob('Volume', d.vol, volFmt, () => S.mix[s].vol, (v) => { S.mix[s].vol = v; sendMix(s); }, null,
+      { id: `mix.${s}.vol`, name: `Volume ${A_ROWS[s]}` });
+    vol.classList.add('kvol'); vol.querySelector('.knob').setAttribute('aria-label', 'Volume ' + A_ROWS[s]);
+    const pan = makeKnob('Pan', d.pan, panFmt, () => S.mix[s].pan, (v) => { S.mix[s].pan = v; sendMix(s); }, CC.pan(s),
+      { id: `mix.${s}.pan`, name: `Pan ${A_ROWS[s]}` });
+    pan.classList.add('kpan'); pan.querySelector('.knob').setAttribute('aria-label', 'Pan ' + A_ROWS[s]);
+    refreshers.push(vol.refresh, pan.refresh);
+    strip.append(name, vol, pan); cell.appendChild(strip);
+    mixStrips[s] = strip;
+  });
+  stage.appendChild(cell);
+  mixCells[cls] = { cell, sources };
+}
+makeMixCell('m-in', 'ingressi', [AR.inA, AR.inB]);
+makeMixCell('m-res', 'risonatori e vocoder', [AR.resA, AR.resB, AR.vocA, AR.vocB]);
+makeMixCell('m-loop', 'looper e grani scelti', [AR.loopA, AR.loopB, AR.grA, AR.grB]);
+// Wide screens: the mixer is the centre column. Narrow screens (one column): each
+// module carries its own volume and pan at its foot.
+const narrowScreen = matchMedia('(max-width: 960px)');
+const MIX_HOME = { 'm-in': 'in', 'm-res': 'res', 'm-loop': 'loop' };
+function placeMixer() {
+  for (const cls in mixCells) {
+    const { cell, sources } = mixCells[cls];
+    sources.forEach((s) => (narrowScreen.matches ? ui[s % 2].mixRows[MIX_HOME[cls]] : cell).appendChild(mixStrips[s]));
+  }
+}
+placeMixer();
+if (narrowScreen.addEventListener) narrowScreen.addEventListener('change', placeMixer); else narrowScreen.addListener(placeMixer);
+fillSelects();
+function updateChannelText() {
+  for (let ch = 0; ch < 2; ch++) {
+    const s = live[ch].state, u = ui[ch];
+    const armed = !!live[ch].armed;
+    const key = s + (armed ? 'a' : '');
+    if (u.hintKey !== key) {
+      u.hintKey = key; u.pill.dataset.s = s; u.pill.textContent = STATES[s] || ''; u.rec.dataset.s = s;
+      u.rec.classList.toggle('armed', armed);
+      u.hint.textContent = armed ? (s === 1 || s === 4 ? 'Si chiude sul prossimo battito del clock.' : 'Parte sul prossimo battito del clock.') : (HINTS[s] || '');
+    }
+    u.len.textContent = live[ch].length.toFixed(1).replace('.', ',') + ' s';
+  }
+}
+
+// --- Page 2: modulators --------------------------------------------------------------
+const modsEl = document.getElementById('mods');
+function makeMod(title, badge, knobs) {
+  const m = document.createElement('section'); m.className = 'sec'; m.setAttribute('aria-label', title);
+  m.innerHTML = `<div class="row"><span class="badge">${badge}</span><span class="stitle">${title}</span></div><div class="knobs"></div>`;
+  const k = m.querySelector('.knobs');
+  knobs.forEach(([label, def, fmt, get, set, id]) => { const kn = makeKnob(label, def, fmt, get, set, null, id ? { id, name: title + ': ' + label } : null); refreshers.push(kn.refresh); k.appendChild(kn); });
+  modsEl.appendChild(m);
+}
+makeMod('Altri inviluppi', 'E', [
+  ['Rilascio', 0.5, envRelFmt, () => S.envOther.rel, (v) => { S.envOther.rel = v; sendEnvOther(); }, 'env.rel'],
+  ['Guadagno', 0.3, envGainFmt, () => S.envOther.gain, (v) => { S.envOther.gain = v; sendEnvOther(); }, 'env.gain']]);
+{ const note = document.createElement('p'); note.className = 'silk'; note.style.margin = '0';
+  note.textContent = 'Looper, grani scelti, risonatori e vocoder; quelli degli ingressi sono nella pagina Suona';
+  modsEl.lastElementChild.appendChild(note); }
+{ const m = document.createElement('section'); m.className = 'sec'; m.setAttribute('aria-label', 'Rings');
+  m.innerHTML = '<div class="row"><span class="badge">R</span><span class="stitle">Rings</span></div>';
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn mini picker';
+  const paint = () => { b.innerHTML = '<small>Risoluzione</small><span>' + (S.fullRes ? '60 modi per voce' : 'originale') + '</span>'; b.setAttribute('aria-pressed', String(S.fullRes)); };
+  b.addEventListener('click', () => { S.fullRes = !S.fullRes; send({ t: 'param', m: 4, i: FULL_RES_INDEX, v: S.fullRes ? 1 : 0 }); paint(); save(); });
+  paint(); refreshers.push(paint);
+  const p = document.createElement('p'); p.className = 'silk'; p.style.margin = '0';
+  p.textContent = 'In polifonia Rings divide 64 modi tra le voci; qui ogni voce ne tiene 60, al costo di più CPU';
+  m.append(b, p); document.getElementById('modsAudio').appendChild(m); }
+
+// --- Button matrices ----------------------------------------------------------------
+let rowLeds = {}, colLeds = {};
+const flashUntil = {};
+function flashRow(i) { flashUntil['r' + i] = performance.now() + 90; }
+function flashCol(i) { flashUntil['c' + i] = performance.now() + 90; }
+const fmtLevel = (v, signed) => (signed && v > 0 ? '+' : v < 0 ? '−' : '') + Math.round(Math.abs(v) * 100);
+const lastValue = {};
+let editorClose = null;
+// rows, cols: [{ label, name, idx, group?, pulse?, trig? }]; idx is the engine index, group starts a group.
+// A tap switches a button on (at its last value) or off; a long press opens the value editor.
+function makeBoard(root, title, note, rows, cols, matrixKey, isBack) {
+  const signed = matrixKey === 'c';
+  if (editorClose) editorClose();
+  if (signed) { rowLeds = {}; colLeds = {}; }
+  root.innerHTML = `<div class="bhead"><h3>${title}</h3></div><p class="note">${note}</p><div class="bscroll"><table class="grid"></table></div>`;
+  const table = root.querySelector('table');
+  const thead = document.createElement('thead');
+  const groups = [];
+  cols.forEach((c, d) => { if (!groups.length || groups[groups.length - 1].label !== c.group) groups.push({ label: c.group, n: 0, at: d }); groups[groups.length - 1].n++; });
+  const sepAt = new Set(groups.slice(1).map((g) => g.at));
+  const gr = document.createElement('tr'); gr.className = 'groups'; gr.innerHTML = signed ? '<th></th><th></th>' : '<th></th>';
+  groups.forEach((g, gi) => { const th = document.createElement('th'); th.colSpan = g.n; th.scope = 'colgroup'; th.textContent = g.label || ''; if (gi) th.className = 'gsep'; gr.appendChild(th); });
+  thead.appendChild(gr);
+  const hr = document.createElement('tr'); hr.innerHTML = signed ? '<th></th><th scope="col">Trim</th>' : '<th></th>';
+  cols.forEach((c, d) => {
+    const th = document.createElement('th'); th.scope = 'col';
+    if (sepAt.has(d)) th.className = 'gsep';
+    if (signed && c.trig) { th.innerHTML = '<span class="rl"><span class="rled"></span><span></span></span>'; th.querySelector('.rl span:last-child').textContent = c.label; colLeds[c.idx] = th.querySelector('.rled'); }
+    else th.textContent = c.label;
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  const tbody = document.createElement('tbody');
+  const cells = [];
+  rows.forEach((r) => {
+    const s = r.idx;
+    if (r.group) {
+      const gtr = document.createElement('tr'); gtr.className = 'rgroup';
+      const gth = document.createElement('th'); gth.colSpan = cols.length + (signed ? 2 : 1); gth.scope = 'colgroup'; gth.textContent = r.group;
+      gtr.appendChild(gth); tbody.appendChild(gtr);
+    }
+    const tr = document.createElement('tr');
+    const th = document.createElement('th'); th.scope = 'row';
+    th.innerHTML = '<span class="rl"><span class="rled"></span><span></span></span>';
+    th.querySelector('.rl span:last-child').textContent = r.label;
+    if (signed) rowLeds[s] = th.querySelector('.rled');
+    tr.appendChild(th);
+    if (signed) {
+      const td = document.createElement('td');
+      const wrap = document.createElement('span'); wrap.className = 'trimcell';
+      const input = document.createElement('input'); input.type = 'range'; input.min = 0; input.max = 200; input.step = 1; input.id = 'trim-' + s;
+      input.setAttribute('aria-label', 'Trim di ' + r.name);
+      const out = document.createElement('output');
+      const paintTrim = () => { input.value = Math.round(S.trim[s] * 100); out.textContent = Math.round(S.trim[s] * 100) + '%'; };
+      input.addEventListener('input', () => { S.trim[s] = input.value / 100; out.textContent = input.value + '%'; send({ t: 'trim', s, v: S.trim[s] }); save(); });
+      input.addEventListener('dblclick', () => { S.trim[s] = 1; paintTrim(); send({ t: 'trim', s, v: 1 }); save(); });
+      paintTrim(); cells.push(paintTrim);
+      wrap.append(input, out); td.appendChild(wrap); tr.appendChild(td);
+    }
+    cols.forEach((c, di) => {
+      const d = c.idx;
+      const td = document.createElement('td'); if (sepAt.has(di)) td.className = 'gsep';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'cell' + (isBack && isBack(r, c) ? ' back' : '');
+      const key = matrixKey + s + '-' + d;
+      const paint = () => {
+        const v = S[matrixKey][s][d];
+        const off = !!(c.off && c.off());
+        b.disabled = off; b.classList.toggle('off', off);
+        b.classList.toggle('on', v !== 0);
+        b.classList.toggle('neg', v < 0);
+        b.style.setProperty('--d', Math.round(8 + 14 * Math.abs(v)) + 'px');
+        b.title = v ? fmtLevel(v, signed) + '%' : '';
+        b.setAttribute('aria-label', off ? `${r.name} verso ${c.name}: disattivato (${c.offWhy})` : `${r.name} verso ${c.name}: ${v ? fmtLevel(v, signed) + '%' : 'spento'}. Tieni premuto per il valore.`);
+      };
+      const setValue = (v) => {
+        v = Math.round(v * 100) / 100;
+        S[matrixKey][s][d] = v;
+        if (v) lastValue[key] = v;
+        send({ t: matrixKey === 'a' ? 'apin' : 'cpin', s, d, v });
+        paint(); save();
+      };
+      let timer = 0, longPressed = false, x0 = 0, y0 = 0;
+      b.addEventListener('pointerdown', (e) => {
+        longPressed = false; x0 = e.clientX; y0 = e.clientY;
+        b.classList.add('holding');
+        timer = setTimeout(() => {
+          longPressed = true; b.classList.remove('holding');
+          if (!S[matrixKey][s][d]) setValue(lastValue[key] || (signed ? 0.5 : 1));
+          openEditor(root, b, `${r.name} → ${c.name}`, signed, () => S[matrixKey][s][d], setValue);
+        }, 450);
+      });
+      const cancel = () => { clearTimeout(timer); b.classList.remove('holding'); };
+      b.addEventListener('pointermove', (e) => { if (Math.hypot(e.clientX - x0, e.clientY - y0) > 10) cancel(); });
+      b.addEventListener('pointerup', cancel);
+      b.addEventListener('pointercancel', cancel);
+      b.addEventListener('pointerleave', cancel);
+      b.addEventListener('contextmenu', (e) => e.preventDefault());
+      b.addEventListener('click', () => {
+        if (longPressed) { longPressed = false; return; }
+        const v = S[matrixKey][s][d];
+        setValue(v ? 0 : (lastValue[key] || (signed ? 0.5 : 1)));
+      });
+      b.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); openEditor(root, b, `${r.name} → ${c.name}`, signed, () => S[matrixKey][s][d], setValue); } });
+      paint(); cells.push(paint);
+      td.appendChild(b); tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  table.append(thead, tbody);
+  return () => cells.forEach((p) => p());
+}
+function openEditor(board, cell, title, signed, get, set) {
+  if (editorClose) editorClose();
+  const ed = document.createElement('div'); ed.className = 'editor'; ed.setAttribute('role', 'dialog'); ed.setAttribute('aria-label', title);
+  const chips = signed ? [-1, -0.5, -0.25, 0.25, 0.5, 1] : [0.25, 0.5, 0.75, 1];
+  ed.innerHTML = `<div class="etitle"></div><div class="evalue"></div>
+    <input type="range" id="editor-range" min="${signed ? -100 : 0}" max="100" step="1" aria-label="Valore">
+    <div class="chips">${chips.map((c) => `<button type="button" data-v="${c}">${fmtLevel(c, signed)}</button>`).join('')}</div>
+    <div class="eactions"><button class="btn" type="button" data-act="off">Spegni</button><button class="btn primary" type="button" data-act="done">Fatto</button></div>`;
+  ed.querySelector('.etitle').textContent = title;
+  const range = ed.querySelector('input'), value = ed.querySelector('.evalue');
+  const show = () => { const v = get(); range.value = Math.round(v * 100); value.textContent = v ? fmtLevel(v, signed) + '%' : 'spento'; };
+  range.addEventListener('input', () => { set(range.value / 100); show(); });
+  ed.querySelectorAll('.chips button').forEach((c) => c.addEventListener('click', () => { set(parseFloat(c.dataset.v)); show(); }));
+  ed.querySelector('[data-act="off"]').addEventListener('click', () => { set(0); close(); });
+  ed.querySelector('[data-act="done"]').addEventListener('click', () => close());
+  board.appendChild(ed);
+  const br = board.getBoundingClientRect(), cr = cell.getBoundingClientRect();
+  const w = ed.offsetWidth, h = ed.offsetHeight;
+  let left = cr.left - br.left + cr.width / 2 - w / 2;
+  left = Math.max(12, Math.min(br.width - w - 12, left));
+  let top = cr.bottom - br.top + 8;
+  if (top + h > br.height - 8 && cr.top - br.top - h - 8 > 0) top = cr.top - br.top - h - 8;
+  ed.style.left = left + 'px'; ed.style.top = top + 'px';
+  show();
+  range.focus({ preventScroll: true });
+  const outside = (e) => { if (!ed.contains(e.target) && e.target !== cell) close(); };
+  const esc = (e) => { if (e.key === 'Escape') close(); };
+  setTimeout(() => { document.addEventListener('pointerdown', outside); document.addEventListener('keydown', esc); }, 0);
+  function close() {
+    document.removeEventListener('pointerdown', outside); document.removeEventListener('keydown', esc);
+    ed.remove(); editorClose = null; if (cell.isConnected) cell.focus({ preventScroll: true });
+  }
+  editorClose = close;
+}
+
+const A_COL_GROUP = ['Looper', 'Looper', 'Risonatore', 'Risonatore', 'Vocoder A', 'Vocoder A', 'Vocoder B', 'Vocoder B', ''];
+const audioRows = A_ROWS.map((label, i) => ({ label, name: label, idx: i }));
+const audioCols = A_COLS.map((label, d) => ({ label, name: A_COL_NAMES[d], idx: d, group: A_COL_GROUP[d] }));
+const repaintAudio = makeBoard(document.getElementById('audioBoard'), 'Matrice audio', 'Righe: uscite dei moduli. Colonne: ingressi. Ogni riga ha il suo inviluppo nella matrice di controllo.',
+  audioRows, audioCols, 'a', (r, c) => A_ROW_ORDER[r.idx] >= A_COL_ORDER[c.idx]);
+
+// The control matrix follows the boxes: their rows at the bottom, their triggers on the right.
+function controlRows() {
+  const rows = A_ROWS.map((label, i) => ({ label, name: 'Inviluppo di ' + label, idx: i, group: i ? null : 'Inviluppi delle sorgenti audio' }));
+  rows.push({ label: 'Trigger grani A', name: 'Trigger grani A', idx: CR.grA, pulse: true, group: 'Grani, testine e clock' },
+    { label: 'Trigger grani B', name: 'Trigger grani B', idx: CR.grB, pulse: true },
+    { label: 'Testina A', name: 'Testina A', idx: CR.headA }, { label: 'Testina B', name: 'Testina B', idx: CR.headB },
+    { label: 'Clock', name: 'Clock', idx: CR.clock, pulse: true });
+  S.boxes.forEach((b, i) => rows.push({ label: boxName(b), name: boxName(b), idx: BR(b.slot), pulse: !!BOX_TYPES[b.type].pulse, group: i ? null : 'Box di modulazione' }));
+  return rows;
+}
+function controlCols() {
+  const cols = [{ label: 'Strum A', name: 'Strum A', idx: CC.strumA, group: 'Trigger', trig: true },
+    { label: 'Strum B', name: 'Strum B', idx: CC.strumB, group: 'Trigger', trig: true },
+    { label: 'Clock', name: 'Reset del clock', idx: CC.clockReset, group: 'Trigger', trig: true }];
+  for (let ch = 0; ch < 2; ch++) {
+    const L = ch ? 'B' : 'A';
+    LOOP_KEYS.forEach((k, j) => cols.push({ label: LOOP_TARGETS[j], name: `Looper ${L} ${LOOP_TARGETS[j]}`, idx: CC.loop(ch, k), group: 'Looper ' + L }));
+    DELAY_KEYS.forEach((k, j) => cols.push({ label: DELAY_TARGETS[j], name: `Delay ${L} ${DELAY_TARGETS[j]}`, idx: CC.delay(ch, k), group: 'Delay ' + L,
+      off: k === 'dpan' ? () => S.looper[ch].dmode > 0.5 : null, offWhy: 'il delay è in ping-pong' }));
+  }
+  for (let ch = 0; ch < 2; ch++) {
+    const L = ch ? 'B' : 'A';
+    RESO_KEYS.forEach((k, j) => cols.push({ label: RESO_TARGETS[j], name: `Risonatore ${L} ${RESO_TARGETS[j]}`, idx: CC.reso(ch, k), group: 'Risonatore ' + L }));
+  }
+  for (let ch = 0; ch < 2; ch++) {
+    const L = ch ? 'B' : 'A';
+    VOC_KEYS.forEach((k, j) => cols.push({ label: VOC_TARGETS[j], name: `Vocoder ${L} ${VOC_TARGETS[j]}`, idx: CC.voc(ch, k), group: 'Vocoder ' + L }));
+  }
+  A_ROWS.forEach((r, s) => cols.push({ label: MIX_LABELS[s], name: 'Pan ' + r, idx: CC.pan(s), group: 'Pan' }));
+  S.boxes.forEach((b) => cols.push({ label: boxName(b), name: BOX_TYPES[b.type].trig + ' di ' + boxName(b), idx: BT(b.slot), group: 'Trigger dei box', trig: true }));
+  return cols;
+}
+let controlRowDefs = [], repaintControl = () => {};
+function buildControl() {
+  controlRowDefs = controlRows();
+  repaintControl = makeBoard(document.getElementById('controlBoard'), 'Matrice di controllo',
+    'Righe: l’inviluppo di ogni sorgente audio, grani, testine e clock, poi i box della striscia in basso, ciascuno con il suo trim (0–200%). Colonne: trigger, parametri di looper e delay, risonatori e vocoder, pan di ogni sorgente, poi il trigger di ogni box. I valori vanno da −100 a +100%.',
+    controlRowDefs, controlCols(), 'c', null);
+}
+buildControl();
+
+// --- Modulation strip ------------------------------------------------------------------
+const stripEl = document.getElementById('strip'), boxesEl = document.getElementById('boxes'), addBtn = document.getElementById('addBox');
+const stripToggle = document.getElementById('stripToggle');
+let boxLeds = {};
+function makeBoxEl(b) {
+  const T = BOX_TYPES[b.type];
+  const el = document.createElement('section'); el.className = 'mbox'; el.setAttribute('aria-label', boxName(b));
+  el.innerHTML = `<div class="mhead"><span class="mbadge" aria-hidden="true">${T.badge}</span><span class="mname"></span><span class="mled" aria-hidden="true"></span><button class="mx" type="button">×</button></div><div class="knobs"></div>`;
+  el.querySelector('.mname').textContent = boxName(b);
+  const x = el.querySelector('.mx');
+  x.setAttribute('aria-label', 'Togli ' + boxName(b));
+  x.addEventListener('click', () => removeBox(b));
+  const k = el.querySelector('.knobs');
+  T.knobs.forEach(([label, def, fmt], i) => k.appendChild(makeKnob(label, def, fmt, () => b.k[i],
+    (v) => { b.k[i] = v; send({ t: 'param', m: 8, i: b.slot * 2 + i, v }); }, null,
+    { id: `box.${b.slot}.${i}`, name: `${boxName(b)}: ${label}` })));
+  boxLeds[b.slot] = el.querySelector('.mled');
+  return el;
+}
+function renderStrip() {
+  boxesEl.querySelectorAll('.mbox').forEach((e) => e.remove());
+  boxLeds = {};
+  S.boxes.forEach((b) => boxesEl.insertBefore(makeBoxEl(b), addBtn));
+  addBtn.disabled = S.boxes.length >= MAX_BOXES;
+  addBtn.title = addBtn.disabled ? 'Massimo ' + MAX_BOXES + ' box' : '';
+  document.getElementById('boxCount').textContent = S.boxes.length + ' box';
+  stripEl.classList.toggle('collapsed', !!S.stripCollapsed);
+  stripToggle.textContent = S.stripCollapsed ? 'Espandi' : 'Riduci';
+  stripToggle.setAttribute('aria-expanded', String(!S.stripCollapsed));
+  updateArrows();
+}
+// The master clock: fixed at the left of the strip, the tempo of the whole instrument.
+let clockLed = null;
+{
+  const el = document.createElement('section'); el.className = 'mbox master'; el.setAttribute('aria-label', 'Clock principale');
+  el.innerHTML = '<div class="mhead"><span class="mbadge" aria-hidden="true">C</span><span class="mname">Clock</span><span class="mled" aria-hidden="true"></span></div><div class="knobs"></div>';
+  const k = el.querySelector('.knobs');
+  [['BPM', 'bpm', 0.4, bpmFmt], ['Divisione', 'div', 3 / 7, divFmt]].forEach(([label, key, def, fmt]) => {
+    const kn = makeKnob(label, def, fmt, () => S.clock[key], (v) => { S.clock[key] = v; sendClock(); }, null, { id: `clock.${key}`, name: 'Clock: ' + label });
+    refreshers.push(kn.refresh); k.appendChild(kn);
+  });
+  clockLed = el.querySelector('.mled');
+  document.getElementById('masterClock').appendChild(el);
+}
+const boxPrev = document.getElementById('boxPrev'), boxNext = document.getElementById('boxNext');
+function updateArrows() {
+  boxPrev.disabled = boxesEl.scrollLeft <= 2;
+  boxNext.disabled = boxesEl.scrollLeft + boxesEl.clientWidth >= boxesEl.scrollWidth - 2;
+}
+boxPrev.addEventListener('click', () => boxesEl.scrollBy({ left: -Math.max(160, boxesEl.clientWidth - 80), behavior: 'smooth' }));
+boxNext.addEventListener('click', () => boxesEl.scrollBy({ left: Math.max(160, boxesEl.clientWidth - 80), behavior: 'smooth' }));
+boxesEl.addEventListener('scroll', updateArrows, { passive: true });
+window.addEventListener('resize', updateArrows);
+function clearBoxPins(slot) {
+  S.c[BR(slot)].fill(0);
+  S.c.forEach((row) => { row[BT(slot)] = 0; });
+  S.trim[BR(slot)] = 1;
+}
+function addBox(type) {
+  if (S.boxes.length >= MAX_BOXES) return;
+  const used = new Set(S.boxes.map((b) => b.slot));
+  let slot = 0; while (used.has(slot)) slot++;
+  const taken = new Set(S.boxes.filter((b) => b.type === type).map((b) => b.n));
+  let n = 1; while (taken.has(n)) n++;
+  const b = makeBox(type, slot, null, n);
+  clearBoxPins(slot);
+  S.boxes.push(b);
+  send({ t: 'box', slot, type: BOX_TYPES[type].code });
+  sendBoxKnobs(b);
+  renderStrip(); buildControl(); save();
+  boxesEl.scrollTo({ left: boxesEl.scrollWidth });
+  updateArrows();
+  setStatus(boxName(b) + ' aggiunto: è l’ultima riga della matrice di controllo, con il suo trigger nell’ultima colonna.');
+}
+function removeBox(b) {
+  S.boxes = S.boxes.filter((x) => x !== b);
+  clearBoxPins(b.slot);
+  forgetControls(`box.${b.slot}.`);
+  send({ t: 'box', slot: b.slot, type: 0 });
+  renderStrip(); buildControl(); save();
+  addBtn.focus({ preventScroll: true });
+}
+let menuEl = null;
+function closeAddMenu() {
+  if (!menuEl) return;
+  menuEl.remove(); menuEl = null; addBtn.setAttribute('aria-expanded', 'false');
+  document.removeEventListener('pointerdown', outsideMenu); document.removeEventListener('keydown', escMenu);
+}
+function outsideMenu(e) { if (menuEl && !menuEl.contains(e.target) && e.target !== addBtn) closeAddMenu(); }
+function escMenu(e) { if (e.key === 'Escape') { closeAddMenu(); addBtn.focus(); } }
+function openAddMenu() {
+  closeAddMenu();
+  menuEl = document.createElement('div'); menuEl.className = 'addmenu'; menuEl.setAttribute('role', 'menu'); menuEl.setAttribute('aria-label', 'Tipo di box');
+  Object.entries(BOX_TYPES).forEach(([key, T]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem');
+    b.innerHTML = `<span class="mbadge" aria-hidden="true">${T.badge}</span><span><b></b><small></small></span>`;
+    b.querySelector('b').textContent = T.long; b.querySelector('small').textContent = T.desc;
+    b.addEventListener('click', () => { closeAddMenu(); addBox(key); });
+    menuEl.appendChild(b);
+  });
+  document.body.appendChild(menuEl);
+  const r = addBtn.getBoundingClientRect(), w = menuEl.offsetWidth, h = menuEl.offsetHeight;
+  menuEl.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + 'px';
+  menuEl.style.top = Math.max(8, r.top - h - 8) + 'px';
+  addBtn.setAttribute('aria-expanded', 'true');
+  menuEl.querySelector('button').focus({ preventScroll: true });
+  setTimeout(() => { document.addEventListener('pointerdown', outsideMenu); document.addEventListener('keydown', escMenu); }, 0);
+}
+addBtn.addEventListener('click', () => (menuEl ? closeAddMenu() : openAddMenu()));
+stripToggle.addEventListener('click', () => { S.stripCollapsed = !S.stripCollapsed; renderStrip(); save(); });
+const setStripHeight = () => document.documentElement.style.setProperty('--strip-h', stripEl.offsetHeight + 'px');
+if (window.ResizeObserver) new ResizeObserver(setStripHeight).observe(stripEl);
+renderStrip(); setStripHeight();
+
+// The patch bar is on both matrix pages.
+const presetBars = [...document.querySelectorAll('[data-presets]')];
+function applyPreset(p, i) {
+  const { a, c, boxes } = p.make();
+  S.boxes.forEach((b) => forgetControls(`box.${b.slot}.`));
+  S.a = a; S.c = c; S.boxes = boxes; S.preset = i;
+  if (p.params && p.params.clock) Object.assign(S.clock, p.params.clock);
+  for (let k = 0; k < MAX_BOXES; k++) S.trim[BR(k)] = 1;
+  const pr = p.params || {};
+  (pr.looper || []).forEach((o, ch) => Object.assign(S.looper[ch], o));
+  (pr.reso || []).forEach((o, ch) => Object.assign(S.reso[ch], o));
+  (pr.input || []).forEach((o, ch) => Object.assign(S.input[ch], o));
+  (pr.voc || []).forEach((o, ch) => Object.assign(S.voc[ch], o));
+  (pr.model || []).forEach((m, ch) => { if (m != null) S.model[ch] = m; });
+  (pr.poly || []).forEach((m, ch) => { if (m != null) S.poly[ch] = m; });
+  repaintAudio(); renderStrip(); buildControl(); refreshers.forEach((r) => r());
+  presetBars.forEach((bar) => bar.querySelectorAll('button').forEach((x, j) => x.setAttribute('aria-pressed', String(j === i))));
+  if (ready) pushAll();
+  save();
+}
+presetBars.forEach((bar) => PRESETS.forEach((p, i) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = p.name;
+  b.setAttribute('aria-pressed', String(S.preset === i));
+  b.addEventListener('click', () => applyPreset(p, i));
+  bar.appendChild(b);
+}));
+
+// --- Displays and lights ---------------------------------------------------------------
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let colors = {};
+function readColors() { colors = { ink: cssVar('--ink'), ink2: cssVar('--ink-2'), a: cssVar('--a'), b: cssVar('--b'), rec: cssVar('--rec') }; }
+readColors();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', readColors);
+new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+function drawChannel(ch) {
+  const c = ui[ch].canvas, dpr = Math.min(2, window.devicePixelRatio || 1), w = c.clientWidth, h = c.clientHeight;
+  if (!w) return;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const L = live[ch], col = ch ? colors.b : colors.a, mid = h / 2;
+  const st = S.looper[ch].start, en = S.looper[ch].end, recording = L.state === 1 || L.state === 4;
+  const liveView = L.state === 0 && L.live && ready;  // no loop: the last seconds of input
+  if ((L.state >= 2 && !recording) || liveView) {
+    const x0 = Math.min(st, en) * w, x1 = Math.max(st, en) * w;
+    g.fillStyle = col; g.globalAlpha = 0.1; g.fillRect(x0, 0, Math.max(2, x1 - x0), h);
+    g.globalAlpha = 0.45; g.fillRect(x0, 6, 1, h - 12); g.fillRect(x1 - 1, 6, 1, h - 12);
+  }
+  // The buffer as a wash of ink, mirrored about the middle.
+  const ov = L.overview, n = ov.length, bw = w / n;
+  g.beginPath(); g.moveTo(0, mid);
+  for (let i = 0; i < n; i++) g.lineTo((i + 0.5) * bw, mid - Math.max(0.6, ov[i] * h * 0.42));
+  g.lineTo(w, mid);
+  for (let i = n - 1; i >= 0; i--) g.lineTo((i + 0.5) * bw, mid + Math.max(0.6, ov[i] * h * 0.42));
+  g.closePath();
+  g.fillStyle = recording ? colors.rec : colors.ink; g.globalAlpha = recording ? 0.45 : 0.26; g.fill();
+  // Grains as drops: the chosen ones (those that strum) in ink, the others in the hand's colour.
+  const gr = L.grains;
+  for (let i = 0; i + 2 < gr.length; i += 3) {
+    const x = gr[i] * w, env = gr[i + 1], chosen = gr[i + 2] > 0.5;
+    g.fillStyle = chosen ? colors.ink : col; g.globalAlpha = 0.25 + 0.6 * env;
+    g.beginPath(); g.arc(x, mid, 1.5 + env * (chosen ? 6 : 4.5), 0, Math.PI * 2); g.fill();
+  }
+  if ((L.state >= 2 && !recording) || liveView) { g.globalAlpha = 0.75; g.fillStyle = colors.ink; g.fillRect(L.playhead * w - 0.75, 4, 1.5, h - 8); }
+  g.font = '500 12.5px "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif'; g.fillStyle = colors.ink2; g.globalAlpha = 1;
+  if (L.state === 0) g.fillText(!ready ? 'Audio spento' : 'Nessun loop: i grani suonano gli ultimi 8 secondi', 12, 20);
+  if (recording) { g.fillStyle = colors.rec; g.fillText('Registra ' + L.length.toFixed(1).replace('.', ',') + ' s', 12, 20); }
+  g.globalAlpha = 1;
+}
+function lights() {
+  const now = performance.now();
+  const beat = (flashUntil['r' + CR.clock] || 0) > now;
+  for (let ch = 0; ch < 2; ch++) ui[ch].syncTick.classList.toggle('beat', beat && !!S.recSync[ch]);
+  const level = (idx, pulse) => (pulse ? ((flashUntil['r' + idx] || 0) > now ? 1 : 0) : Math.min(1, Math.abs(sourceValues[idx] || 0)));
+  if (!pageMod.hidden) for (const r of controlRowDefs) { const el = rowLeds[r.idx]; if (el) el.style.opacity = 0.12 + 0.88 * level(r.idx, r.pulse); }
+  for (const b of S.boxes) { const el = boxLeds[b.slot]; if (el) el.style.opacity = 0.15 + 0.85 * level(BR(b.slot), BOX_TYPES[b.type].pulse); }
+  if (clockLed) clockLed.style.opacity = 0.15 + 0.85 * level(CR.clock, true);
+  if (!pageSuona.hidden) mixLeds.forEach((el, s) => { el.style.opacity = 0.15 + 0.85 * level(s, false); });
+  if (!pageMod.hidden) for (const d in colLeds) colLeds[d].style.opacity = (flashUntil['c' + d] || 0) > now ? 1 : 0.12;
+  for (let ch = 0; ch < 2; ch++) {
+    ui[ch].meter.style.width = Math.round(Math.min(1, sourceValues[AR.inA + ch]) * 100) + '%';
+    ui[ch].vmeter.style.width = Math.round(Math.min(1, sourceValues[AR.vocA + ch]) * 100) + '%';
+  }
+  modKnobs.forEach((f) => f());
+}
+function frame() {
+  if (!pageSuona.hidden) { drawChannel(0); drawChannel(1); }
+  lights();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+// --- Pages -------------------------------------------------------------------------------
+const pageSuona = document.getElementById('suona'), pageAudio = document.getElementById('audio'), pageMod = document.getElementById('modulazione');
+const PAGES = { suona: [pageSuona, document.getElementById('tab-suona')], audio: [pageAudio, document.getElementById('tab-audio')],
+  modulazione: [pageMod, document.getElementById('tab-mod')] };
+function showPage(name) {
+  if (name === 'matrici') name = 'audio';  // links from earlier versions
+  if (!PAGES[name]) name = 'suona';
+  for (const k in PAGES) { const [page, tab] = PAGES[k]; page.hidden = k !== name; tab.setAttribute('aria-selected', String(k === name)); }
+  if (editorClose) editorClose();
+}
+for (const k in PAGES) PAGES[k][1].addEventListener('click', () => { location.hash = k; showPage(k); });
+window.addEventListener('hashchange', () => showPage(location.hash.slice(1)));
+showPage(location.hash.slice(1));
+
+// --- Top bar -----------------------------------------------------------------------------
+const valuesBtn = document.getElementById('valuesBtn');
+function paintValues() {
+  document.body.classList.toggle('show-values', !!S.showValues);
+  valuesBtn.setAttribute('aria-pressed', String(!!S.showValues));
+  valuesBtn.querySelector('span').textContent = S.showValues ? 'sempre' : 'al tocco';
+}
+valuesBtn.addEventListener('click', () => { S.showValues = !S.showValues; paintValues(); save(); });
+paintValues();
+const startBtn = document.getElementById('start');
+startBtn.addEventListener('click', startAudio);
+const master = document.getElementById('master');
+master.value = S.master;
+master.addEventListener('input', () => { S.master = parseFloat(master.value); send({ t: 'param', m: 4, i: MASTER_INDEX, v: S.master }); save(); });
+registerControl('master', 'Volume generale', (v) => { S.master = v; master.value = v; send({ t: 'param', m: 4, i: MASTER_INDEX, v }); save(); }, master.parentElement);
+
+const fileInput = document.getElementById('file'), filePlayBtn = document.getElementById('filePlay');
+fileInput.addEventListener('change', async () => {
+  const f = fileInput.files && fileInput.files[0];
+  if (!f) return;
+  if (!ctx) await startAudio();
+  setStatus('Lettura di ' + f.name + '…');
+  try {
+    const buf = await ctx.decodeAudioData(await f.arrayBuffer());
+    const max = Math.min(buf.length, Math.round(ctx.sampleRate * 60));
+    const l = buf.getChannelData(0).slice(0, max);
+    const r = (buf.numberOfChannels > 1 ? buf.getChannelData(1) : buf.getChannelData(0)).slice(0, max);
+    fileData = { l, r }; filePlaying = true;
+    // A freshly loaded file goes to the inputs that have no source yet.
+    if (S.input[0].sel === 'none') S.input[0].sel = 'fileL';
+    if (S.input[1].sel === 'none') S.input[1].sel = 'fileR';
+    sendInput(0); sendInput(1); routeLive(); save();
+    fillSelects();
+    send({ t: 'file', l: l.slice(), r: r.slice() }); send({ t: 'filePlay', on: true, restart: true });
+    filePlayBtn.hidden = false; filePlayBtn.classList.add('on'); filePlayBtn.setAttribute('aria-pressed', 'true');
+    document.getElementById('fileName').textContent = f.name.length > 22 ? f.name.slice(0, 20) + '…' : f.name;
+    setStatus('File caricato come ingresso dell\u2019host: ' + (max / ctx.sampleRate).toFixed(1).replace('.', ',') + ' s, ' + (buf.numberOfChannels > 1 ? 'stereo' : 'mono') + '. Lo trovi nel menu degli ingressi come «File caricato». Suona in loop finché non lo fermi.');
+  } catch (e) { setStatus('Non riesco a leggere questo file. Prova un WAV o un M4A.', true); }
+  fileInput.value = '';
+});
+// --- MIDI learn -------------------------------------------------------------------------------
+// The MIDI button turns learn mode on: touch a control, then move a knob on the controller.
+const midiBtn = document.getElementById('midiBtn'), learnbar = document.getElementById('learnbar');
+const learnText = document.getElementById('learnText'), learnClear = document.getElementById('learnClear'), learnDone = document.getElementById('learnDone');
+let learning = false, learnTarget = null, midiAccess = null, midiTried = false, midiInputs = 0;
+// Inside the iPad app the MIDI comes from the system (CoreMIDI), through the app.
+const NATIVE = !!window.fukumiNative;
+window.fukumiMidi = (list) => { (list || []).forEach((m) => handleMidi(m)); };
+window.fukumiMidiSources = (names) => { midiInputs = (names || []).length; midiBtn.classList.toggle('connected', midiInputs > 0); if (learning) setLearnText(); };
+function midiNote() {
+  if (NATIVE) return midiInputs ? '' : ' Nessun controller MIDI collegato.';
+  if (midiAccess) return midiInputs ? '' : ' Nessun controller MIDI collegato.';
+  return midiTried ? ' Qui il browser non dà accesso al MIDI: i collegamenti restano salvati e funzionano dove il MIDI c’è (Chrome o Edge su computer, poi l’app).' : '';
+}
+function setLearnText() {
+  const c = learnTarget && controls.get(learnTarget), k = learnTarget && keyFor(learnTarget);
+  learnText.textContent = c ? `Muovi un potenziometro per collegarlo a «${c.name}»${k ? ' (ora ' + ccLabel(k) + ')' : ''}.`
+    : 'MIDI learn: tocca un controllo, poi muovi un potenziometro del controller.' + midiNote();
+  learnClear.disabled = !k;
+}
+async function initMidi() {
+  if (NATIVE) { try { window.webkit.messageHandlers.fukumi.postMessage({ t: 'midiSources' }); } catch (e) {} return; }
+  if (midiAccess || midiTried) return;
+  midiTried = true;
+  try {
+    if (!navigator.requestMIDIAccess) throw new Error('no Web MIDI');
+    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+    const attach = () => {
+      midiInputs = 0;
+      midiAccess.inputs.forEach((input) => { input.onmidimessage = (e) => handleMidi(e.data); midiInputs++; });
+      midiBtn.classList.toggle('connected', midiInputs > 0);
+      if (learning) setLearnText();
+    };
+    attach();
+    midiAccess.onstatechange = attach;
+  } catch (e) { midiAccess = null; }
+  if (learning) setLearnText();
+}
+function arm(id) {
+  disarm();
+  learnTarget = id;
+  const c = controls.get(id); if (c) c.el.classList.add('armed');
+  setLearnText();
+}
+function disarm() {
+  const c = learnTarget && controls.get(learnTarget); if (c) c.el.classList.remove('armed');
+  learnTarget = null;
+  setLearnText();
+}
+// Control changes only: a CC drives one control, and a control listens to one CC.
+function handleMidi(data) {
+  if (!data || data.length < 3 || (data[0] & 0xf0) !== 0xb0) return;
+  const key = (data[0] & 0x0f) + ':' + data[1];
+  if (learning && learnTarget) {
+    const id = learnTarget, old = keyFor(id), prev = S.midiMap[key];
+    if (old) delete S.midiMap[old];
+    S.midiMap[key] = id;
+    if (prev && prev !== id) paintLearnTag(prev);
+    paintLearnTag(id);
+    setStatus('Collegato: ' + ccLabel(key) + ' → ' + controls.get(id).name + '.');
+    disarm(); save();
+    return;
+  }
+  const c = controls.get(S.midiMap[key]);
+  if (c) c.apply(data[2] / 127);
+}
+function setLearning(on) {
+  learning = on;
+  document.body.classList.toggle('learning', on);
+  midiBtn.setAttribute('aria-pressed', String(on));
+  learnbar.hidden = !on;
+  if (on) { controls.forEach((_, id) => paintLearnTag(id)); initMidi(); }
+  disarm();
+}
+midiBtn.addEventListener('click', () => setLearning(!learning));
+learnDone.addEventListener('click', () => setLearning(false));
+learnClear.addEventListener('click', () => {
+  const k = learnTarget && keyFor(learnTarget);
+  if (k) { delete S.midiMap[k]; paintLearnTag(learnTarget); save(); setStatus('Collegamento tolto: ' + controls.get(learnTarget).name + '.'); }
+  setLearnText();
+});
+// In learn mode a touch on a control picks it instead of moving it.
+function pickForLearn(e) {
+  if (!learning || !e.target.closest) return;
+  const el = e.target.closest('[data-learn]');
+  if (!el) return;
+  e.preventDefault(); e.stopPropagation();
+  if (e.type === 'pointerdown') arm(el.dataset.learn);
+}
+document.addEventListener('pointerdown', pickForLearn, true);
+document.addEventListener('click', pickForLearn, true);
+document.addEventListener('keydown', (e) => { if (learning && e.key === 'Escape') setLearning(false); });
+if (Object.keys(S.midiMap).length || NATIVE) initMidi();
+
+filePlayBtn.addEventListener('click', () => {
+  filePlaying = !filePlaying; filePlayBtn.classList.toggle('on', filePlaying); filePlayBtn.setAttribute('aria-pressed', String(filePlaying));
+  send({ t: 'filePlay', on: filePlaying, restart: filePlaying });
+});
+</script>
